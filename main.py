@@ -1,6 +1,7 @@
 # This example requires the 'message_content' intent.
 
 import asyncio
+import contextlib
 import discord
 import logging
 import pyttsx3
@@ -47,12 +48,13 @@ async def on_message(message):
 async def on_voice_state_update(member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
     if member == client.user:
         return
-
-    if before.channel is not None:
-        await depart_user(member, before.channel)
-
-    if after.channel is not None:
-        await greet_user(member)
+    with contextlib.suppress(Exception):
+        if before.channel is not None:
+            await depart_user(member, before.channel)
+            
+    with contextlib.suppress(Exception):
+        if after.channel is not None:
+            await greet_user(member)
 
 async def greet_user(member: discord.Member):
     await say_line(f"{member.name} has joined the channel", member.voice.channel)
