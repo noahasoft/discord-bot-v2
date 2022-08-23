@@ -4,6 +4,7 @@ import asyncio
 import discord
 import logging
 import pyttsx3
+import os
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 engine = pyttsx3.init()
@@ -76,4 +77,4 @@ async def say_line(line: str, channel: discord.VoiceChannel):
         await channel.send('You need to join a voice channel first!')
 
 
-client.run('MjUxMTIyNDcwMTc2Njg2MDkw.GDzvYP.X-MElWZ3Wd6zYzff6W_rVNbKy4aU6O5rgL2TuE')
+client.run(os.environ['DISCORD_TOKEN'])
