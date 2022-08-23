@@ -27,14 +27,14 @@ async def on_message(message):
 
     if message.content.startswith('$hello'):
         await message.channel.send('Hello!')
-        engine.save_to_file(message.author.name, '.\hello.mp3')
+        engine.save_to_file(message.author.name, 'hello.mp3')
         engine.runAndWait()
         voice_guild = message.guild
         channel = message.author.voice.channel
         if voice_guild is not None:
             voice_channel = await channel.connect()
 
-            voice_channel.play(discord.FFmpegPCMAudio('.\hello.mp3'), after=lambda e: print('done', e))
+            voice_channel.play(discord.FFmpegPCMAudio('hello.mp3'), after=lambda e: print('done', e))
 
             while voice_channel.is_playing():
                 await asyncio.sleep(1)
@@ -61,13 +61,13 @@ async def depart_user(member: discord.Member, channel: discord.VoiceChannel):
     await say_line(f"{member.name} has left the channel", channel)
 
 async def say_line(line: str, channel: discord.VoiceChannel):
-    engine.save_to_file(line, '.\join.mp3')
+    engine.save_to_file(line, 'join.mp3')
     engine.runAndWait()
     voice_guild = channel.guild
     if voice_guild is not None:
         voice_channel = await channel.connect()
 
-        voice_channel.play(discord.FFmpegPCMAudio('.\join.mp3'), after=lambda e: print('done', e))
+        voice_channel.play(discord.FFmpegPCMAudio('join.mp3'), after=lambda e: print('done', e))
 
         while voice_channel.is_playing():
             await asyncio.sleep(1)
