@@ -38,7 +38,7 @@ async def on_message(message):
             while voice_channel.is_playing():
                 await asyncio.sleep(1)
 
-            await voice_channel.disconnect()
+            # await voice_channel.disconnect()
         else:
             await message.channel.send('You need to join a voice channel first!')
 
