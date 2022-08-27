@@ -1,14 +1,15 @@
 # This example requires the 'message_content' intent.
 
 import asyncio
-import contextlib
+from io import BytesIO
 import discord
 import logging
-import pyttsx3
 import os
+from aiogtts import aiogTTS
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
-engine = pyttsx3.init()
+aiogtts = aiogTTS()
+io = BytesIO()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -25,13 +26,12 @@ async def on_message(message):
         return
     if message.content.startswith('$hello'):
         await message.channel.send('Hello!')
-        engine.save_to_file(message.author.name, 'hello.mp3')
-        engine.runAndWait()
+        await aiogtts.save(message.author.name, 'hello.mp3')
         voice_guild = message.guild
         if voice := message.author.voice and voice_guild is not None:
             channel = voice.channel
             voice_channel = await channel.connect()
-            voice_channel.play(discord.FFmpegPCMAudio('hello.mp3'), after=lambda e: print('done', e))
+            voice_channel.play(discord.FFmpegPCMAudio(io), after=lambda e: print('done', e))
 
             while voice_channel.is_playing():
                 await asyncio.sleep(1)
@@ -57,8 +57,8 @@ async def depart_user(member: discord.Member, channel: discord.VoiceChannel):
     await say_line(f"{member.name} has left the channel", channel)
 
 async def say_line(line: str, channel: discord.VoiceChannel):
-    engine.save_to_file(line, 'join.mp3')
-    engine.runAndWait()
+    await aiogtts.save(line, 'join.mp3')
+    
     voice_guild = channel.guild
     if voice_guild is not None:
         voice_channel = await channel.connect()
