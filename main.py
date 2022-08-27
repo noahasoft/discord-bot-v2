@@ -44,10 +44,10 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
     if member == client.user:
         return
 
-    if before.channel is not None:
+    if before.channel is not None and after.channel is None:
         await depart_user(member, before.channel)
         
-    if after.channel is not None:
+    if after.channel is not None and before.channel is None:
         await greet_user(member)
 
 async def greet_user(member: discord.Member):
