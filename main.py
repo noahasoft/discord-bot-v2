@@ -23,22 +23,19 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-
     if message.content.startswith('$hello'):
         await message.channel.send('Hello!')
         engine.save_to_file(message.author.name, 'hello.mp3')
         engine.runAndWait()
         voice_guild = message.guild
-        channel = message.author.voice.channel
-        if voice_guild is not None:
+        if voice := message.author.voice and voice_guild is not None:
+            channel = voice.channel
             voice_channel = await channel.connect()
-
             voice_channel.play(discord.FFmpegPCMAudio('hello.mp3'), after=lambda e: print('done', e))
 
             while voice_channel.is_playing():
                 await asyncio.sleep(1)
-
-            # await voice_channel.disconnect()
+            await voice_channel.disconnect()
         else:
             await message.channel.send('You need to join a voice channel first!')
 
@@ -76,4 +73,4 @@ async def say_line(line: str, channel: discord.VoiceChannel):
         await channel.send('You need to join a voice channel first!')
 
 
-client.run(os.environ['DISCORD_TOKEN'])
+client.run(os.environ['DISCORD_TOKEN'], log_handler=handler)
