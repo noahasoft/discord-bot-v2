@@ -1,3 +1,7 @@
 venv/
 *.mp3
 *.log
+*.pyc
+*.pyo
+*.egg-info
+*.egg
