@@ -100,11 +100,11 @@ async def on_voice_state_update(
         return
 
     # Leaving a voice channel
-    if before.channel is not None and after.channel is None:
+    if before.channel is not None and (after.channel is None or after.channel == before.channel.guild.afk_channel):
         await depart_user(member, before.channel)
 
-    # Joining a voice channel
-    if after.channel is not None and before.channel is None:
+    # Joining a voice channel from no channel or afk
+    if after.channel is not None and (before.channel is None or before.channel == before.channel.guild.afk_channel):
         await greet_user(member)
 
 
