@@ -99,9 +99,12 @@ async def on_voice_state_update(
     if member == client.user or member.bot:
         return
 
-    # Leaving a voice channel
-    if before.channel is not None and (after.channel is None or after.channel == before.channel.guild.afk_channel):
-        await depart_user(member, before.channel)
+    # Leaving a voice channel or going afk
+    if before.channel is not None:
+        if after.channel is None:
+            await depart_user(member, before.channel)
+        elif after.channel == before.channel.guild.afk_channel:
+            await afk_user(member, before.channel)
 
     # Joining a voice channel from no channel or afk
     if after.channel is not None and (before.channel is None or before.channel == before.channel.guild.afk_channel):
@@ -114,6 +117,10 @@ async def greet_user(member: discord.Member):
 
 async def depart_user(member: discord.Member, channel: discord.VoiceChannel):
     await say_line(f"{member.name} has left the channel", channel)
+
+
+async def afk_user(member: discord.Member, channel: discord.VoiceChannel):
+    await say_line(f"{member.name} went afk", channel)
 
 
 async def say_line(line: str, channel: discord.VoiceChannel):
