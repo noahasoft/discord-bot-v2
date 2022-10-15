@@ -9,7 +9,7 @@ import logging
 import os
 from aiogtts import aiogTTS
 from typing import Optional
-
+from audiofix import FFmpegPCMAudio
 
 MY_GUILD = discord.Object(
     id=int(os.environ["DISCORD_GUILD"])
@@ -17,7 +17,6 @@ MY_GUILD = discord.Object(
 
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
 aiogtts = aiogTTS()
-io = BytesIO()
 
 
 class MyBot(commands.Bot):
@@ -124,13 +123,17 @@ async def afk_user(member: discord.Member, channel: discord.VoiceChannel):
 
 
 async def say_line(line: str, channel: discord.VoiceChannel):
-    await aiogtts.save(line, "join.mp3")
+    io = BytesIO()
+
+    # await aiogtts.save(line, "join.mp3")
+    await aiogtts.write_to_fp(line, io)
+    io.seek(0)
 
     voice_guild = channel.guild
     if voice_guild is not None:
         voice_channel = await channel.connect()
 
-        voice_channel.play(discord.FFmpegPCMAudio("join.mp3"))
+        voice_channel.play(FFmpegPCMAudio(io.read(), pipe=True))
 
         while voice_channel.is_playing():
             await asyncio.sleep(1)
