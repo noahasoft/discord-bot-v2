@@ -5,6 +5,7 @@ from io import BytesIO
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord.utils import get
 import logging
 import os
 from aiogtts import aiogTTS
@@ -26,22 +27,31 @@ class MyBot(commands.Bot):
         super().__init__(
             command_prefix=commands.when_mentioned_or("/"), intents=intents
         )
-        # A CommandTree is a special type that holds all the application command
-        # state required to make it work. This is a separate class because it
-        # allows all the extra state to be opt-in.
-        # Whenever you want to work with application commands, your tree is used
-        # to store and work with them.
-        # Note: When using commands.Bot instead of discord.Client, the bot will
-        # maintain its own tree instead.
-        # self.tree = app_commands.CommandTree(self)
 
-    # In this basic example, we just synchronize the app commands to one guild.
-    # Instead of specifying a guild to every command, we copy over our global commands instead.
-    # By doing so, we don't have to wait up to an hour until they are shown to the end-user.
     async def setup_hook(self):
         # This copies the global commands over to your guild.
         self.tree.copy_global_to(guild=MY_GUILD)
         await self.tree.sync(guild=MY_GUILD)
+
+    # New role management functions
+    async def create_role(self, guild: discord.Guild, name, color=None, permissions=None):
+        color = discord.Color(int(color)) if color else discord.Color.default()
+        permissions = discord.Permissions(permissions) if permissions else discord.Permissions(discord.Permissions.DEFAULT_VALUE)
+        await guild.create_role(name=name, color=color, permissions=permissions)
+        pass
+
+    async def delete_role(self, role):
+        await role.delete()
+
+    async def add_role_to_member(self, member, role_name):
+        role = get(member.guild.roles, name=role_name)
+        if role:
+            await member.add_roles(role)
+
+    async def remove_role_from_member(self, member, role_name):
+        role = get(member.guild.roles, name=role_name)
+        if role:
+            await member.remove_roles(role)
 
 
 client = MyBot()
@@ -78,10 +88,6 @@ async def joined(
     )
 
 
-# A Context Menu command is an app command that can be run on a member or on a message by
-# accessing a menu within the client, usually via right clicking.
-# It always takes an interaction as its first parameter and a Member or Message as its second parameter.
-
 # This context menu command only works on members
 @client.tree.context_menu(name="Show Join Date")
 async def show_join_date(interaction: discord.Interaction, member: discord.Member):
@@ -89,6 +95,52 @@ async def show_join_date(interaction: discord.Interaction, member: discord.Membe
     await interaction.response.send_message(
         f"{member} joined at {discord.utils.format_dt(member.joined_at)}"
     )
+
+
+@client.tree.command()
+async def create_role(interaction: discord.Interaction, role_name: str, role_color: str = None, role_permissions: int = None):
+    """Create a new role with the specified name, color, and permissions."""
+    if not interaction.user.guild_permissions.manage_roles:
+        await interaction.response.send_message("You don't have permission to create roles.")
+        return
+
+    await client.create_role(interaction.guild, role_name, role_color, role_permissions)
+    await interaction.response.send_message(f"Role '{role_name}' created successfully.")
+
+@client.tree.command()
+async def delete_role(interaction: discord.Interaction, role_name: str):
+    """Delete a role with the specified name."""
+    if not interaction.user.guild_permissions.manage_roles:
+        await interaction.response.send_message("You don't have permission to delete roles.")
+        return
+
+    role = get(interaction.guild.roles, name=role_name)
+    if not role:
+        await interaction.response.send_message(f"Role '{role_name}' not found.")
+        return
+
+    await client.delete_role(role)
+    await interaction.response.send_message(f"Role '{role_name}' deleted successfully.")
+
+@client.tree.command()
+async def add_role(interaction: discord.Interaction, member: discord.Member, role_name: str):
+    """Add a role to a specified member."""
+    if not interaction.user.guild_permissions.manage_roles:
+        await interaction.response.send_message("You don't have permission to manage roles.")
+        return
+
+    await client.add_role_to_member(member, role_name)
+    await interaction.response.send_message(f"Role '{role_name}' added to {member.name}.")
+
+@client.tree.command()
+async def remove_role(interaction: discord.Interaction, member: discord.Member, role_name: str):
+    """Remove a role from a specified member."""
+    if not interaction.user.guild_permissions.manage_roles:
+        await interaction.response.send_message("You don't have permission to manage roles.")
+        return
+
+    await client.remove_role_from_member(member, role_name)
+    await interaction.response.send_message(f"Role '{role_name}' removed from {member.name}.")
 
 
 @client.event
