@@ -173,6 +173,16 @@ async def depart_user(member: discord.Member, channel: discord.VoiceChannel):
 async def afk_user(member: discord.Member, channel: discord.VoiceChannel):
     await say_line(f"{member.name} went afk", channel)
 
+# Add this command to the bot script
+@client.tree.command()
+async def restart(interaction: discord.Interaction):
+    """Restarts the bot."""
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("You don't have permission to restart the bot.")
+        return
+
+    await interaction.response.send_message("Restarting the bot...")
+    await client.close()
 
 async def say_line(line: str, channel: discord.VoiceChannel):
     io = BytesIO()
