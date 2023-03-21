@@ -1,5 +1,3 @@
-# This example requires the 'message_content' intent.
-
 import asyncio
 from io import BytesIO
 import discord
@@ -11,10 +9,11 @@ import os
 from aiogtts import aiogTTS
 from typing import Optional
 from audiofix import FFmpegPCMAudio
+import aiosqlite
 
 MY_GUILD = discord.Object(
     id=int(os.environ["DISCORD_GUILD"])
-)  # replace with your guild id
+)
 
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
 aiogtts = aiogTTS()
@@ -24,6 +23,7 @@ class MyBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
+        intents.members = True
         super().__init__(
             command_prefix=commands.when_mentioned_or("/"), intents=intents
         )
@@ -61,6 +61,7 @@ client = MyBot()
 async def on_ready():
     print(f"We have logged in as {client.user}")
     print("------")
+    await create_whitelist_table()  # Ensure the whitelist table exists
 
 
 @client.tree.command()
@@ -173,16 +174,51 @@ async def depart_user(member: discord.Member, channel: discord.VoiceChannel):
 async def afk_user(member: discord.Member, channel: discord.VoiceChannel):
     await say_line(f"{member.name} went afk", channel)
 
-# Add this command to the bot script
 @client.tree.command()
 async def restart(interaction: discord.Interaction):
     """Restarts the bot."""
-    if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("You don't have permission to restart the bot.")
+    if not await is_user_whitelisted(interaction.user.id):  # Check if the user is whitelisted
+        await interaction.response.send_message("You are not whitelisted to restart the bot.")
         return
 
     await interaction.response.send_message("Restarting the bot...")
     await client.close()
+
+# Add this command to add a user to the whitelist
+@client.tree.command()
+async def whitelist(interaction: discord.Interaction, user: discord.User):
+    """Adds a user to the whitelist."""
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("You don't have permission to manage the whitelist.")
+        return
+
+    await add_user_to_whitelist(user.id)
+    await interaction.response.send_message(f"{user.name} has been added to the whitelist.")
+
+# Add this command to remove a user from the whitelist
+@client.tree.command()
+async def unwhitelist(interaction: discord.Interaction, user: discord.User):
+    """Removes a user from the whitelist."""
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("You don't have permission to manage the whitelist.")
+        return
+
+    await remove_user_from_whitelist(user.id)
+    await interaction.response.send_message(f"{user.name} has been removed from the whitelist.")
+
+# Add this function to print the whitelist
+@client.tree.command()
+async def print_whitelist(interaction: discord.Interaction):
+    """Prints the whitelist."""
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("You don't have permission to manage the whitelist.")
+        return
+
+    whitelist_ids: list[int] = await get_whitelist()
+    # Convert the list of user ids to a list of user names
+    whitelist: list[str] = [client.get_user(user_id[0]).name for user_id in whitelist_ids]
+    await interaction.response.send_message(f"Whitelist: {whitelist}")
+
 
 async def say_line(line: str, channel: discord.VoiceChannel):
     io = BytesIO()
@@ -204,5 +240,37 @@ async def say_line(line: str, channel: discord.VoiceChannel):
     else:
         await channel.send("You need to join a voice channel first!")
 
+
+# Add this function to create the whitelist table if it doesn't exist
+async def create_whitelist_table():
+    async with aiosqlite.connect("whitelist.db") as db:
+        await db.execute("CREATE TABLE IF NOT EXISTS whitelist (user_id INTEGER PRIMARY KEY)")
+        await db.commit()
+
+# Add this function to check if a user is whitelisted
+async def is_user_whitelisted(user_id: int) -> bool:
+    async with aiosqlite.connect("whitelist.db") as db:
+        cursor = await db.execute("SELECT user_id FROM whitelist WHERE user_id = ?", (user_id,))
+        result = await cursor.fetchone()
+        return result is not None
+
+# Add this function to add a user to the whitelist
+async def add_user_to_whitelist(user_id: int):
+    async with aiosqlite.connect("whitelist.db") as db:
+        await db.execute("INSERT OR IGNORE INTO whitelist (user_id) VALUES (?)", (user_id,))
+        await db.commit()
+
+# Add this function to remove a user from the whitelist
+async def remove_user_from_whitelist(user_id: int):
+    async with aiosqlite.connect("whitelist.db") as db:
+        await db.execute("DELETE FROM whitelist WHERE user_id = ?", (user_id,))
+        await db.commit()
+
+# Add this function to get the whitelist
+async def get_whitelist() -> list:
+    async with aiosqlite.connect("whitelist.db") as db:
+        cursor = await db.execute("SELECT user_id FROM whitelist")
+        result = await cursor.fetchall()
+        return result
 
 client.run(os.environ["DISCORD_TOKEN"], log_handler=handler)
