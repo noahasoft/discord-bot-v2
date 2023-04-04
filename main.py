@@ -10,10 +10,9 @@ from aiogtts import aiogTTS
 from typing import Optional
 from audiofix import FFmpegPCMAudio
 import aiosqlite
+import aiohttp
 
-MY_GUILD = discord.Object(
-    id=int(os.environ["DISCORD_GUILD"])
-)
+MY_GUILD = discord.Object(id=int(os.environ["DISCORD_GUILD"]))
 
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
 aiogtts = aiogTTS()
@@ -34,9 +33,15 @@ class MyBot(commands.Bot):
         await self.tree.sync(guild=MY_GUILD)
 
     # New role management functions
-    async def create_role(self, guild: discord.Guild, name, color=None, permissions=None):
+    async def create_role(
+        self, guild: discord.Guild, name, color=None, permissions=None
+    ):
         color = discord.Color(int(color)) if color else discord.Color.default()
-        permissions = discord.Permissions(permissions) if permissions else discord.Permissions(discord.Permissions.DEFAULT_VALUE)
+        permissions = (
+            discord.Permissions(permissions)
+            if permissions
+            else discord.Permissions(discord.Permissions.DEFAULT_VALUE)
+        )
         await guild.create_role(name=name, color=color, permissions=permissions)
         pass
 
@@ -99,20 +104,30 @@ async def show_join_date(interaction: discord.Interaction, member: discord.Membe
 
 
 @client.tree.command()
-async def create_role(interaction: discord.Interaction, role_name: str, role_color: str = None, role_permissions: int = None):
+async def create_role(
+    interaction: discord.Interaction,
+    role_name: str,
+    role_color: str = None,
+    role_permissions: int = None,
+):
     """Create a new role with the specified name, color, and permissions."""
     if not interaction.user.guild_permissions.manage_roles:
-        await interaction.response.send_message("You don't have permission to create roles.")
+        await interaction.response.send_message(
+            "You don't have permission to create roles."
+        )
         return
 
     await client.create_role(interaction.guild, role_name, role_color, role_permissions)
     await interaction.response.send_message(f"Role '{role_name}' created successfully.")
 
+
 @client.tree.command()
 async def delete_role(interaction: discord.Interaction, role_name: str):
     """Delete a role with the specified name."""
     if not interaction.user.guild_permissions.manage_roles:
-        await interaction.response.send_message("You don't have permission to delete roles.")
+        await interaction.response.send_message(
+            "You don't have permission to delete roles."
+        )
         return
 
     role = get(interaction.guild.roles, name=role_name)
@@ -123,25 +138,39 @@ async def delete_role(interaction: discord.Interaction, role_name: str):
     await client.delete_role(role)
     await interaction.response.send_message(f"Role '{role_name}' deleted successfully.")
 
+
 @client.tree.command()
-async def add_role(interaction: discord.Interaction, member: discord.Member, role_name: str):
+async def add_role(
+    interaction: discord.Interaction, member: discord.Member, role_name: str
+):
     """Add a role to a specified member."""
     if not interaction.user.guild_permissions.manage_roles:
-        await interaction.response.send_message("You don't have permission to manage roles.")
+        await interaction.response.send_message(
+            "You don't have permission to manage roles."
+        )
         return
 
     await client.add_role_to_member(member, role_name)
-    await interaction.response.send_message(f"Role '{role_name}' added to {member.name}.")
+    await interaction.response.send_message(
+        f"Role '{role_name}' added to {member.name}."
+    )
+
 
 @client.tree.command()
-async def remove_role(interaction: discord.Interaction, member: discord.Member, role_name: str):
+async def remove_role(
+    interaction: discord.Interaction, member: discord.Member, role_name: str
+):
     """Remove a role from a specified member."""
     if not interaction.user.guild_permissions.manage_roles:
-        await interaction.response.send_message("You don't have permission to manage roles.")
+        await interaction.response.send_message(
+            "You don't have permission to manage roles."
+        )
         return
 
     await client.remove_role_from_member(member, role_name)
-    await interaction.response.send_message(f"Role '{role_name}' removed from {member.name}.")
+    await interaction.response.send_message(
+        f"Role '{role_name}' removed from {member.name}."
+    )
 
 
 @client.event
@@ -159,7 +188,9 @@ async def on_voice_state_update(
             await afk_user(member, before.channel)
 
     # Joining a voice channel from no channel or afk
-    if after.channel is not None and (before.channel is None or before.channel == before.channel.guild.afk_channel):
+    if after.channel is not None and (
+        before.channel is None or before.channel == before.channel.guild.afk_channel
+    ):
         await greet_user(member)
 
 
@@ -174,64 +205,104 @@ async def depart_user(member: discord.Member, channel: discord.VoiceChannel):
 async def afk_user(member: discord.Member, channel: discord.VoiceChannel):
     await say_line(f"{member.name} went afk", channel)
 
+
 @client.tree.command()
 async def restart(interaction: discord.Interaction):
     """Restarts the bot."""
-    if not await is_user_whitelisted(interaction.user.id):  # Check if the user is whitelisted
-        await interaction.response.send_message("You are not whitelisted to restart the bot.")
+    if not await is_user_whitelisted(
+        interaction.user.id
+    ):  # Check if the user is whitelisted
+        await interaction.response.send_message(
+            "You are not whitelisted to restart the bot."
+        )
         return
 
     await interaction.response.send_message("Restarting the bot...")
     await client.close()
+
 
 # Add this command to add a user to the whitelist
 @client.tree.command()
 async def whitelist(interaction: discord.Interaction, user: discord.User):
     """Adds a user to the whitelist."""
     if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("You don't have permission to manage the whitelist.")
+        await interaction.response.send_message(
+            "You don't have permission to manage the whitelist."
+        )
         return
 
     await add_user_to_whitelist(user.id)
-    await interaction.response.send_message(f"{user.name} has been added to the whitelist.")
+    await interaction.response.send_message(
+        f"{user.name} has been added to the whitelist."
+    )
+
 
 # Add this command to remove a user from the whitelist
 @client.tree.command()
 async def unwhitelist(interaction: discord.Interaction, user: discord.User):
     """Removes a user from the whitelist."""
     if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("You don't have permission to manage the whitelist.")
+        await interaction.response.send_message(
+            "You don't have permission to manage the whitelist."
+        )
         return
 
     await remove_user_from_whitelist(user.id)
-    await interaction.response.send_message(f"{user.name} has been removed from the whitelist.")
+    await interaction.response.send_message(
+        f"{user.name} has been removed from the whitelist."
+    )
+
 
 # Add this function to print the whitelist
 @client.tree.command()
 async def print_whitelist(interaction: discord.Interaction):
     """Prints the whitelist."""
     if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("You don't have permission to manage the whitelist.")
+        await interaction.response.send_message(
+            "You don't have permission to manage the whitelist."
+        )
         return
 
     whitelist_ids: list[int] = await get_whitelist()
     # Convert the list of user ids to a list of user names
-    whitelist: list[str] = [client.get_user(user_id[0]).name for user_id in whitelist_ids]
+    whitelist: list[str] = [
+        client.get_user(user_id[0]).name for user_id in whitelist_ids
+    ]
     await interaction.response.send_message(f"Whitelist: {whitelist}")
 
 
 async def say_line(line: str, channel: discord.VoiceChannel):
-    io = BytesIO()
+    buffer = BytesIO()
 
-    # await aiogtts.save(line, "join.mp3")
-    await aiogtts.write_to_fp(line, io)
-    io.seek(0)
+    tts_url = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}".format(
+        voice_id="EXAVITQu4vr4xnSDxMaL"
+    )
+    formatted_message = {"text": line}
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            tts_url,
+            headers={
+                "Content-Type": "application/json",
+                "xi-api-key": os.environ["XI_API_KEY"],
+            },
+            json=formatted_message,
+        ) as response:
+            if response.status == 200:
+                buffer = BytesIO(await response.read())
+            else:
+                print("ElevenLabs Request failed with status code:", response.status)
+                print("Response content:", await response.text())
+                print("Falling back to aiogTTS...")
+                await aiogTTS.write_to_fp(line, buffer)
+
+    buffer.seek(0)
 
     voice_guild = channel.guild
     if voice_guild is not None:
         voice_channel = await channel.connect()
 
-        voice_channel.play(FFmpegPCMAudio(io.read(), pipe=True))
+        voice_channel.play(FFmpegPCMAudio(buffer.read(), pipe=True))
 
         while voice_channel.is_playing():
             await asyncio.sleep(1)
@@ -244,21 +315,30 @@ async def say_line(line: str, channel: discord.VoiceChannel):
 # Add this function to create the whitelist table if it doesn't exist
 async def create_whitelist_table():
     async with aiosqlite.connect("whitelist.db") as db:
-        await db.execute("CREATE TABLE IF NOT EXISTS whitelist (user_id INTEGER PRIMARY KEY)")
+        await db.execute(
+            "CREATE TABLE IF NOT EXISTS whitelist (user_id INTEGER PRIMARY KEY)"
+        )
         await db.commit()
+
 
 # Add this function to check if a user is whitelisted
 async def is_user_whitelisted(user_id: int) -> bool:
     async with aiosqlite.connect("whitelist.db") as db:
-        cursor = await db.execute("SELECT user_id FROM whitelist WHERE user_id = ?", (user_id,))
+        cursor = await db.execute(
+            "SELECT user_id FROM whitelist WHERE user_id = ?", (user_id,)
+        )
         result = await cursor.fetchone()
         return result is not None
+
 
 # Add this function to add a user to the whitelist
 async def add_user_to_whitelist(user_id: int):
     async with aiosqlite.connect("whitelist.db") as db:
-        await db.execute("INSERT OR IGNORE INTO whitelist (user_id) VALUES (?)", (user_id,))
+        await db.execute(
+            "INSERT OR IGNORE INTO whitelist (user_id) VALUES (?)", (user_id,)
+        )
         await db.commit()
+
 
 # Add this function to remove a user from the whitelist
 async def remove_user_from_whitelist(user_id: int):
@@ -266,11 +346,13 @@ async def remove_user_from_whitelist(user_id: int):
         await db.execute("DELETE FROM whitelist WHERE user_id = ?", (user_id,))
         await db.commit()
 
+
 # Add this function to get the whitelist
 async def get_whitelist() -> list:
     async with aiosqlite.connect("whitelist.db") as db:
         cursor = await db.execute("SELECT user_id FROM whitelist")
         result = await cursor.fetchall()
         return result
+
 
 client.run(os.environ["DISCORD_TOKEN"], log_handler=handler)
