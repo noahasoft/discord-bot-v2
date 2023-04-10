@@ -294,7 +294,7 @@ async def say_line(line: str, channel: discord.VoiceChannel):
                 print("ElevenLabs Request failed with status code:", response.status)
                 print("Response content:", await response.text())
                 print("Falling back to aiogTTS...")
-                await aiogTTS.write_to_fp(line, buffer)
+                await aiogtts.write_to_fp(line, buffer)
 
     buffer.seek(0)
 
