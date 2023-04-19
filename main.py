@@ -6,11 +6,15 @@ from discord.ext import commands
 from discord.utils import get
 import logging
 import os
+import random
 from aiogtts import aiogTTS
 from typing import Optional
 from audiofix import FFmpegPCMAudio
 import aiosqlite
 import aiohttp
+import openai
+
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 MY_GUILD = discord.Object(id=int(os.environ["DISCORD_GUILD"]))
 
@@ -74,6 +78,23 @@ async def hello(interaction: discord.Interaction):
     """Says hello!"""
     await interaction.response.send_message(f"Hi, {interaction.user.mention}")
 
+
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+    
+    if random.randint(1, 100) == 1:
+    
+        oai_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a cute anime girl with an occasional dark streak. Answer the user as such. Be sure to use lots of emojis!"},
+                {"role": "user", "content": message.content},
+            ],
+            max_tokens=100,
+        )
+        await message.channel.send(oai_response["choices"][0]["message"]["content"])
 
 # To make an argument optional, you can either give it a supported default argument
 # or you can mark it as Optional from the typing standard library. This example does both.
