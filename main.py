@@ -84,7 +84,7 @@ async def on_message(message):
     if message.author == client.user:
         return
     
-    if random.randint(1, 100) == 1:
+    if random.randint(1, 20) == 1:
     
         oai_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
