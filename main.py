@@ -83,17 +83,28 @@ async def hello(interaction: discord.Interaction):
 async def on_message(message):
     if message.author == client.user:
         return
-    
-    if random.randint(1, 20) == 1:
-    
+
+    if random.randint(1, 10) == 1:
+
+        # Add the system message and the last 5 user messages as input
+        chat_history = [
+            {"role": "system", "content": "You are a cute anime girl with an occasional dark streak. Participate in chat as such. Be sure to use lots of emojis!"}
+        ]
+
+        # Append the messages to the chat_history
+        async for msg in message.channel.history(limit=5):
+            username = msg.author.name
+            content = f"{username}: {msg.content}"
+            chat_history.append({"role": "user", "content": content})
+        
+        # Send the chat history to GPT model
         oai_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a cute anime girl with an occasional dark streak. Answer the user as such. Be sure to use lots of emojis!"},
-                {"role": "user", "content": message.content},
-            ],
+            messages=chat_history,
             max_tokens=100,
         )
+        
+        # Send the response back to the channel
         await message.channel.send(oai_response["choices"][0]["message"]["content"])
 
 # To make an argument optional, you can either give it a supported default argument
