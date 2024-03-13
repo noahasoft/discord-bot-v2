@@ -6,15 +6,11 @@ from discord.ext import commands
 from discord.utils import get
 import logging
 import os
-import random
 from aiogtts import aiogTTS
 from typing import Optional
 from audiofix import FFmpegPCMAudio
 import aiosqlite
 import aiohttp
-import openai
-
-openai.api_key = os.environ["OPENAI_API_KEY"]
 
 MY_GUILD = discord.Object(id=int(os.environ["DISCORD_GUILD"]))
 
@@ -78,34 +74,6 @@ async def hello(interaction: discord.Interaction):
     """Says hello!"""
     await interaction.response.send_message(f"Hi, {interaction.user.mention}")
 
-
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-
-    if random.randint(1, 10) == 1:
-
-        # Add the system message and the last 5 user messages as input
-        chat_history = [
-            {"role": "system", "content": "You are a cute anime girl with an occasional dark streak. Participate in chat as such. Be sure to use lots of emojis!"}
-        ]
-
-        # Append the messages to the chat_history
-        async for msg in message.channel.history(limit=5):
-            username = msg.author.name
-            content = f"{username}: {msg.content}"
-            chat_history.append({"role": "user", "content": content})
-        
-        # Send the chat history to GPT model
-        oai_response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=chat_history,
-            max_tokens=100,
-        )
-        
-        # Send the response back to the channel
-        await message.channel.send(oai_response["choices"][0]["message"]["content"])
 
 # To make an argument optional, you can either give it a supported default argument
 # or you can mark it as Optional from the typing standard library. This example does both.
@@ -227,11 +195,11 @@ async def on_voice_state_update(
 
 
 async def greet_user(member: discord.Member):
-    await say_line(f"{member.name} has joined the channel", member.voice.channel)
+    await say_line(f"{member.name} has joined.", member.voice.channel)
 
 
 async def depart_user(member: discord.Member, channel: discord.VoiceChannel):
-    await say_line(f"{member.name} has left the channel", channel)
+    await say_line(f"{member.name} has left.", channel)
 
 
 async def afk_user(member: discord.Member, channel: discord.VoiceChannel):
@@ -309,7 +277,11 @@ async def say_line(line: str, channel: discord.VoiceChannel):
     tts_url = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}".format(
         voice_id="EXAVITQu4vr4xnSDxMaL"
     )
-    formatted_message = {"text": line}
+    model_id = "eleven_turbo_v2"
+    formatted_message = {
+        "model_id": model_id,
+        "text": line,
+    }
 
     async with aiohttp.ClientSession() as session:
         async with session.post(
