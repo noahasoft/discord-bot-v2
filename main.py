@@ -28,11 +28,9 @@ class MyBot(commands.Bot):
         )
 
     async def setup_hook(self):
-        # This copies the global commands over to your guild.
         self.tree.copy_global_to(guild=MY_GUILD)
         await self.tree.sync(guild=MY_GUILD)
 
-    # New role management functions
     async def create_role(
         self, guild: discord.Guild, name, color=None, permissions=None
     ):
@@ -43,7 +41,6 @@ class MyBot(commands.Bot):
             else discord.Permissions(discord.Permissions.DEFAULT_VALUE)
         )
         await guild.create_role(name=name, color=color, permissions=permissions)
-        pass
 
     async def delete_role(self, role):
         await role.delete()
@@ -75,8 +72,6 @@ async def hello(interaction: discord.Interaction):
     await interaction.response.send_message(f"Hi, {interaction.user.mention}")
 
 
-# To make an argument optional, you can either give it a supported default argument
-# or you can mark it as Optional from the typing standard library. This example does both.
 @client.tree.command()
 @app_commands.describe(
     member="The member you want to get the joined date from; defaults to the user who uses the command"
@@ -182,15 +177,13 @@ async def on_voice_state_update(
 
     # Leaving a voice channel or going afk
     if before.channel is not None:
-        if after.channel is None:
-            await depart_user(member, before.channel)
-        elif after.channel == before.channel.guild.afk_channel:
+        if after.channel == before.channel.guild.afk_channel:
             await afk_user(member, before.channel)
+        else:
+            await depart_user(member, before.channel)
 
-    # Joining a voice channel from no channel or afk
-    if after.channel is not None and (
-        before.channel is None or before.channel == before.channel.guild.afk_channel
-    ):
+    # Joining a voice channel
+    if after.channel is not None:
         await greet_user(member)
 
 
