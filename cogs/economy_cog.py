@@ -8,13 +8,18 @@ import aiosqlite
 @app_commands.guild_only()
 class EconomyCog(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: discord.Client = bot
         self.daily_value = 100
 
     async def cog_load(self) -> None:
         await self.create_economy_table()
+        await self.sync_members()
         self.daily.start()
         await super().cog_load()
+
+    async def sync_members(self):
+        for user in self.bot.get_all_members():
+            await self.create_if_not_exists(user.id)
 
     async def cog_unload(self) -> None:
         self.daily.stop()
