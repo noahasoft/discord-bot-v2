@@ -3,6 +3,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
+from cogs.games.slots import SlotMachine
+
 JACKPOT_DEFAULT = 1000
 
 
@@ -12,6 +14,7 @@ class CasinoCog(commands.Cog):
         self.bot: discord.Client = bot
         self.lottery_jackpot = JACKPOT_DEFAULT
         self.economy_cog = self.bot.get_cog("EconomyCog")
+        self.slot_machine = SlotMachine.default()
 
     async def cog_load(self) -> None:
         self.lottery.start()
@@ -33,23 +36,14 @@ class CasinoCog(commands.Cog):
             await interaction.response.send_message("Insufficient balance.")
             return
 
-        slots = [
-            ":apple:",
-            ":banana:",
-            ":cherries:",
-            ":grapes:",
-            ":lemon:",
-            ":watermelon:",
-        ]
-        slot1, slot2, slot3 = [
-            slots[i] for i in [random.randint(0, len(slots) - 1) for _ in range(3)]
-        ]
+        slot1, slot2, slot3 = self.slot_machine.pull_lever()
         response = f"{slot1} {slot2} {slot3}"
 
         if slot1 == slot2 == slot3:
-            await self.economy_cog.deposit_money(interaction.user.id, bet)
+            winnings = self.slot_machine.get_winnings(slot1, slot2, slot3, bet)
+            await self.economy_cog.deposit_money(interaction.user.id, winnings)
             await interaction.response.send_message(
-                f"{response}\Congratulations! You won {bet}!"
+                f"{response}\Congratulations! You won {winnings}!"
             )
             self.jackpot_users.append(interaction.user.id)
         else:
