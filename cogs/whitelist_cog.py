@@ -86,18 +86,3 @@ class WhitelistCog(commands.Cog):
             cursor = await db.execute("SELECT user_id FROM whitelist")
             result = await cursor.fetchall()
             return result
-
-    # TODO: Move this to a separate cog
-    @app_commands.command()
-    async def restart(self, interaction: discord.Interaction):
-        """Restarts the bot."""
-        if not await self.is_user_whitelisted(
-            interaction.user.id
-        ):  # Check if the user is whitelisted
-            await interaction.response.send_message(
-                "You are not whitelisted to restart the bot."
-            )
-            return
-
-        await interaction.response.send_message("Bot restarting, please wait.")
-        await self.bot.close()
