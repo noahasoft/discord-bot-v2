@@ -1,6 +1,7 @@
+import datetime
 import discord
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 import aiosqlite
 
 
@@ -8,10 +9,29 @@ import aiosqlite
 class EconomyCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.daily_value = 100
 
     async def cog_load(self) -> None:
         await self.create_economy_table()
+        self.daily.start()
         await super().cog_load()
+
+    async def cog_unload(self) -> None:
+        self.daily.stop()
+        await super().cog_unload()
+
+    @app_commands.command()
+    async def balance(self, interaction: discord.Interaction):
+        """Prints the user's balance."""
+        balance = await self.get_balance(interaction.user.id)
+        await interaction.response.send_message(f"Balance: {balance}")
+
+    @tasks.loop(time=datetime.time(hour=8, tzinfo=datetime.timezone.utc))
+    async def daily(self):
+        async with aiosqlite.connect("economy.db") as db:
+            async with db.execute("SELECT user_id FROM economy") as cursor:
+                async for row in cursor:
+                    await self.deposit_money(row[0], self.daily_value)
 
     async def create_economy_table(self):
         async with aiosqlite.connect("economy.db") as db:
@@ -54,9 +74,3 @@ class EconomyCog(commands.Cog):
                 (amount, user_id),
             )
             await db.commit()
-
-    @app_commands.command()
-    async def balance(self, interaction: discord.Interaction):
-        """Prints the user's balance."""
-        balance = await self.get_balance(interaction.user.id)
-        await interaction.response.send_message(f"Balance: {balance}")
