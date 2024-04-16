@@ -12,6 +12,7 @@ from audiofix import FFmpegPCMAudio
 import aiosqlite
 import aiohttp
 
+from cogs.joined_cog import JoinedCog
 from cogs.voice_cog import VoiceCog
 from cogs.whitelist_cog import WhitelistCog
 
@@ -22,7 +23,6 @@ handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w"
 
 class MyBot(commands.Bot):
     def __init__(self):
-        self.guild = MY_GUILD
         intents = discord.Intents.default()
         intents.message_content = True
         intents.members = True
@@ -31,6 +31,7 @@ class MyBot(commands.Bot):
         )
 
     async def setup_hook(self):
+        await self.add_cog(JoinedCog(self))
         await self.add_cog(VoiceCog(self))
         await self.add_cog(WhitelistCog(self))
         self.tree.copy_global_to(guild=MY_GUILD)
@@ -74,32 +75,6 @@ async def on_ready():
 async def hello(interaction: discord.Interaction):
     """Says hello!"""
     await interaction.response.send_message(f"Hi, {interaction.user.mention}")
-
-
-@client.tree.command()
-@app_commands.describe(
-    member="The member you want to get the joined date from; defaults to the user who uses the command"
-)
-async def joined(
-    interaction: discord.Interaction, member: Optional[discord.Member] = None
-):
-    """Says when a member joined."""
-    # If no member is explicitly provided then we use the command user here
-    member = member or interaction.user
-
-    # The format_dt function formats the date time into a human readable representation in the official client
-    await interaction.response.send_message(
-        f"{member} joined {discord.utils.format_dt(member.joined_at)}"
-    )
-
-
-# This context menu command only works on members
-@client.tree.context_menu(name="Show Join Date")
-async def show_join_date(interaction: discord.Interaction, member: discord.Member):
-    # The format_dt function formats the date time into a human readable representation in the official client
-    await interaction.response.send_message(
-        f"{member} joined at {discord.utils.format_dt(member.joined_at)}"
-    )
 
 
 @client.tree.command()
