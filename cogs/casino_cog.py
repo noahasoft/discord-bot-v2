@@ -1,4 +1,3 @@
-import datetime
 import random
 import discord
 from discord import app_commands
@@ -71,6 +70,3 @@ class CasinoCog(commands.Cog):
         winner = random.choice(users)
         await self.economy_cog.deposit_money(winner, self.lottery_jackpot)
         self.lottery_jackpot = JACKPOT_DEFAULT
-        await self.bot.get_user(winner).send(
-            f"Congratulations! You won the lottery and received {self.lottery_jackpot}!"
-        )
