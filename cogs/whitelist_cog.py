@@ -7,7 +7,7 @@ import aiosqlite
 @app_commands.guild_only()
 class WhitelistCog(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: discord.Client = bot
 
     async def cog_load(self) -> None:
         await self.create_whitelist_table()
@@ -24,7 +24,7 @@ class WhitelistCog(commands.Cog):
 
         await self.add_user_to_whitelist(user.id)
         await interaction.response.send_message(
-            f"{user.name} has been added to the whitelist."
+            f"{user.mention} has been added to the whitelist."
         )
 
     @app_commands.command()
@@ -38,7 +38,7 @@ class WhitelistCog(commands.Cog):
 
         await self.remove_user_from_whitelist(user.id)
         await interaction.response.send_message(
-            f"{user.name} has been removed from the whitelist."
+            f"{user.mention} has been removed from the whitelist."
         )
 
     @app_commands.command()
@@ -51,8 +51,10 @@ class WhitelistCog(commands.Cog):
             return
 
         whitelist_ids = await self.get_whitelist()
-        whitelist = [self.bot.get_user(user_id[0]).name for user_id in whitelist_ids]
-        await interaction.response.send_message(f"Whitelist: {whitelist}")
+        whitelist = [
+            f"`{self.bot.get_user(user_id[0]).name}`" for user_id in whitelist_ids
+        ]
+        await interaction.response.send_message(f"Whitelist: {', '.join(whitelist)}")
 
     async def create_whitelist_table(self):
         async with aiosqlite.connect("whitelist.db") as db:

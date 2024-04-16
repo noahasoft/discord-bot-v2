@@ -6,10 +6,11 @@ from discord.ext import commands, tasks
 
 JACKPOT_DEFAULT = 1000
 
+
 @app_commands.guild_only()
 class CasinoCog(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: discord.Client = bot
         self.lottery_jackpot = JACKPOT_DEFAULT
         self.economy_cog = self.bot.get_cog("EconomyCog")
 
@@ -70,3 +71,6 @@ class CasinoCog(commands.Cog):
         winner = random.choice(users)
         await self.economy_cog.deposit_money(winner, self.lottery_jackpot)
         self.lottery_jackpot = JACKPOT_DEFAULT
+        await self.bot.get_user(winner).send(
+            f"Congratulations! You won the lottery and received {self.lottery_jackpot}!"
+        )

@@ -7,12 +7,12 @@ from discord.ext import commands
 class UtilitiesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.permissions_cog = self.bot.get_cog("WhitelistCog")
+        self.whitelist_cog = self.bot.get_cog("WhitelistCog")
 
     @app_commands.command()
     async def restart(self, interaction: discord.Interaction):
         """Restarts the bot."""
-        if not await self.permissions_cog.is_user_whitelisted(
+        if not await self.whitelist_cog.is_user_whitelisted(
             interaction.user.id
         ):  # Check if the user is whitelisted
             await interaction.response.send_message(
