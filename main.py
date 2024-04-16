@@ -3,6 +3,7 @@ from discord.ext import commands
 import logging
 import os
 
+from cogs.casino_cog import CasinoCog
 from cogs.economy_cog import EconomyCog
 from cogs.joined_cog import JoinedCog
 from cogs.role_cog import RoleCog
@@ -31,6 +32,7 @@ class MyBot(commands.Bot):
         await self.add_cog(RoleCog(self))
         await self.add_cog(EconomyCog(self))
         await self.add_cog(UtilitiesCog(self))
+        await self.add_cog(CasinoCog(self))
         self.tree.copy_global_to(guild=MY_GUILD)
         await self.tree.sync(guild=MY_GUILD)
 

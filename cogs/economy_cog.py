@@ -33,10 +33,13 @@ class EconomyCog(commands.Cog):
 
     @tasks.loop(time=datetime.time(hour=8, tzinfo=datetime.timezone.utc))
     async def daily(self):
+        for user_id in await self.get_registered_users():
+            await self.deposit_money(user_id, self.daily_value)
+
+    async def get_registered_users(self):
         async with aiosqlite.connect("economy.db") as db:
             async with db.execute("SELECT user_id FROM economy") as cursor:
-                async for row in cursor:
-                    await self.deposit_money(row[0], self.daily_value)
+                return [row[0] async for row in cursor]
 
     async def create_economy_table(self):
         async with aiosqlite.connect("economy.db") as db:
