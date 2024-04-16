@@ -20,7 +20,12 @@ class VoiceCog(commands.Cog):
         before: discord.VoiceState,
         after: discord.VoiceState,
     ):
+        # Ignore the bot itself and other bots
         if member == self.bot.user or member.bot:
+            return
+
+        # Ignore if the user is just muted or deafened
+        if before.channel == after.channel:
             return
 
         # Leaving a voice channel or going afk
