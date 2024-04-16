@@ -1,0 +1,62 @@
+import discord
+from discord import app_commands
+from discord.ext import commands
+import aiosqlite
+
+
+@app_commands.guild_only()
+class EconomyCog(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    async def cog_load(self) -> None:
+        await self.create_economy_table()
+        await super().cog_load()
+
+    async def create_economy_table(self):
+        async with aiosqlite.connect("economy.db") as db:
+            await db.execute(
+                "CREATE TABLE IF NOT EXISTS economy (user_id INTEGER PRIMARY KEY, balance INTEGER DEFAULT 0)"
+            )
+            await db.commit()
+
+    async def create_if_not_exists(self, user_id: int):
+        async with aiosqlite.connect("economy.db") as db:
+            await db.execute(
+                "INSERT OR IGNORE INTO economy (user_id, balance) VALUES (?, ?)",
+                (user_id, 0),
+            )
+            await db.commit()
+
+    async def get_balance(self, user_id: int) -> int:
+        await self.create_if_not_exists(user_id)
+        async with aiosqlite.connect("economy.db") as db:
+            async with db.execute(
+                "SELECT balance FROM economy WHERE user_id = ?", (user_id,)
+            ) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row is not None else 0
+
+    async def withdraw_money(self, user_id: int, amount: int):
+        await self.create_if_not_exists(user_id)
+        async with aiosqlite.connect("economy.db") as db:
+            await db.execute(
+                "UPDATE economy SET balance = balance - ? WHERE user_id = ?",
+                (amount, user_id),
+            )
+            await db.commit()
+
+    async def deposit_money(self, user_id: int, amount: int):
+        await self.create_if_not_exists(user_id)
+        async with aiosqlite.connect("economy.db") as db:
+            await db.execute(
+                "UPDATE economy SET balance = balance + ? WHERE user_id = ?",
+                (amount, user_id),
+            )
+            await db.commit()
+
+    @app_commands.command()
+    async def balance(self, interaction: discord.Interaction):
+        """Prints the user's balance."""
+        balance = await self.get_balance(interaction.user.id)
+        await interaction.response.send_message(f"Balance: {balance}")

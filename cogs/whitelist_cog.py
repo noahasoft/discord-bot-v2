@@ -87,6 +87,7 @@ class WhitelistCog(commands.Cog):
             result = await cursor.fetchall()
             return result
 
+    # TODO: Move this to a separate cog
     @app_commands.command()
     async def restart(self, interaction: discord.Interaction):
         """Restarts the bot."""
