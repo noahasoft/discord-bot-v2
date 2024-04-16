@@ -20,6 +20,9 @@ class SlotWheel:
     def spin(self) -> SlotSymbol:
         return random.choices(self.symbols, self.probabilities, k=1)[0]
 
+    def get_probability(self, symbol: SlotSymbol) -> float:
+        return self.probabilities[self.symbols.index(symbol)]
+
 
 class SlotMachine:
     def __init__(self, wheels: list[SlotWheel]):
@@ -52,14 +55,11 @@ class SlotMachine:
 
     @property
     def prob_of_winning(self) -> float:
-        prob = 0
-        for wheel in self.wheels:
-            for symbol in wheel.symbols:
-                prob += (
-                    wheel.probabilities[wheel.symbols.index(symbol)] ** self.num_wheels
-                )
-
-        return prob
+        return sum(
+            wheel.get_probability(symbol) ** self.num_wheels
+            for wheel in self.wheels
+            for symbol in wheel.symbols
+        )
 
     @property
     def rtp(self) -> float:
@@ -72,6 +72,3 @@ class SlotMachine:
     def get_winnings(self, *symbols: SlotSymbol, bet: int) -> int:
         return (sum(symbol.value for symbol in symbols) * bet) / self.prob_of_winning
 
-
-if __name__ == "__main__":
-    print(SlotMachine.default().rtp)
