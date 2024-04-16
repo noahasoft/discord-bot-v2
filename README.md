@@ -8,7 +8,7 @@ Also included some tree commands as a test. I might add more commands in the fut
 
 ## Requirements
 
-Requirements can be found in the `requirements.txt` file, but the primary libraries are `discord.py` and `aiogtts`.
+Requirements can be found in the `requirements.txt` file, but the primary libraries are `discord.py`, `aiogtts`, `aiohttp`, and `aiosqlite`.
 
 ## Running
 
