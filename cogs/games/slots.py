@@ -4,6 +4,7 @@ from itertools import cycle
 
 from dataclasses import dataclass
 from typing import Optional
+import warnings
 
 
 @dataclass
@@ -106,7 +107,7 @@ class Machine:
                 GameBase(
                     "g01",
                     [Payline([1, 1, 1])],
-                    [PayRule(3, 2.0, Symbol("A"))],
+                    [PayRule(3, 1000, Symbol("A"))],
                     [
                         Reelstrip(
                             [
@@ -154,7 +155,7 @@ class Machine:
     @property
     def prob_winning(self) -> float:
         """Calculate the probability of winning [0., 1.]"""
-        return prod(
+        rv = prod(
             [
                 (
                     reel.get_count(pay_rule.symbol) / sum(reel.counts)
@@ -165,6 +166,38 @@ class Machine:
                 for pay_rule in self.games[self.current_game_idx].pay_rules
             ]
         )
+        if rv == 0:
+            warnings.warn("The probability of winning is zero. Check the pay rules.")
+        return rv
+
+    @property
+    def hit_rate(self) -> float:
+        """Calculate the hit rate of the slot machine. [0., inf]"""
+        if self.prob_winning == 0:
+            return float("inf")
+        return 1 / self.prob_winning
+
+    @property
+    def hit_frequency(self) -> float:
+        """Calculate the hit frequency of the slot machine. [0., 1.]"""
+        return 1 / self.hit_rate
+
+    def rtp(self, avg_bet) -> float:
+        """Calculate the return to player (RTP) of the slot machine. [0., 1.]"""
+        return (
+            self.prob_winning
+            * sum(
+                [
+                    pay_rule.payout
+                    for pay_rule in self.games[self.current_game_idx].pay_rules
+                ]
+            )
+        ) / avg_bet
+
+    @property
+    def volatility(self) -> float:
+        """Calculate the volatility of the slot machine. [0., inf]"""
+        return 1 / self.rtp(1.0)
 
 
 if __name__ == "__main__":
@@ -172,3 +205,7 @@ if __name__ == "__main__":
     print(slot_machine.pull_lever())
     print(slot_machine.evaluate(slot_machine.pull_lever()))
     print(slot_machine.prob_winning)
+    print(slot_machine.hit_rate)
+    print(slot_machine.hit_frequency)
+    print(slot_machine.rtp(1.0))
+    print(slot_machine.volatility)

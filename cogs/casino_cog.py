@@ -23,7 +23,7 @@ class CasinoCog(commands.Cog):
                 GameBase(
                     "g01",
                     [Payline([1, 1, 1])],
-                    [PayRule(3, 2.0)],
+                    [PayRule(3, 1000)],
                     [
                         Reelstrip(
                             [
@@ -38,21 +38,18 @@ class CasinoCog(commands.Cog):
             ],
             Window(3, 3),
         )
+        self.slot_cost = 1
 
     @app_commands.command()
-    async def slots(self, interaction: discord.Interaction, bet: int):
+    async def slots(self, interaction: discord.Interaction):
         """Play the slots with the specified bet."""
-        if bet < 1:
-            await interaction.response.send_message("Bet must be at least 1.")
-            return
-
         balance = await self.economy_cog.get_balance(interaction.user.id)
-        if balance < bet:
+        if balance < self.slot_cost:
             await interaction.response.send_message("Insufficient balance.")
             return
 
         result = self.slot_machine.pull_lever()
-        winnings = self.slot_machine.evaluate(result) * bet
+        winnings = self.slot_machine.evaluate(result)
         response = ""
         for row in range(self.slot_machine.window.rows):
             for (widx, wheel) in enumerate(result):
@@ -71,7 +68,7 @@ class CasinoCog(commands.Cog):
                 f"{response}\nCongratulations! You won ${winnings:.2f}!"
             )
         else:
-            await self.economy_cog.withdraw_money(interaction.user.id, bet)
+            await self.economy_cog.withdraw_money(interaction.user.id, self.slot_cost)
             await interaction.response.send_message(
-                f"{response}\nBetter luck next time! You lost ${bet:.2f}."
+                f"{response}\nBetter luck next time! You lost ${self.slot_cost:.2f}."
             )
