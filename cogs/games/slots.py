@@ -89,7 +89,7 @@ class SlotMachine:
                                 SlotSymbol("A"),
                                 SlotSymbol("X"),
                             ],
-                            [1, 9],
+                            [5, 5],
                         )
                         for _ in range(3)
                     ],
@@ -117,11 +117,10 @@ class SlotMachine:
         return len(self.games[self.current_game_idx].reels)
 
     def is_on_scoreline(self, row: int, wheel_idx: int) -> bool:
-        return (
-            self.games[self.current_game_idx].paylines[self.current_game_idx][wheel_idx]
-            == row
-        )
-
+        for payline in self.games[self.current_game_idx].paylines:
+            if row in payline.indices[wheel_idx]:
+                return True
+        return False
 
 if __name__ == "__main__":
     slot_machine = SlotMachine.default()
