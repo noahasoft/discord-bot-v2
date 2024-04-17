@@ -1,3 +1,4 @@
+from math import prod
 import random
 from itertools import cycle
 
@@ -6,7 +7,7 @@ from typing import Optional
 
 
 @dataclass
-class SlotSymbol:
+class Symbol:
     name: str
 
     def __str__(self) -> str:
@@ -16,7 +17,7 @@ class SlotSymbol:
         return hash(self.name)
 
 
-class SlotPayline:
+class Payline:
     def __init__(self, indices: list[int]):
         self.indices = indices
 
@@ -24,24 +25,22 @@ class SlotPayline:
         return self.indices[idx]
 
 
-class SlotWindow:
+class Window:
     def __init__(self, rows: int, cols: int) -> None:
         self.rows, self.cols = rows, cols
 
 
-class SlotWheel:
-    def __init__(self, symbols: list[SlotSymbol], counts: list[float]):
+class Reelstrip:
+    def __init__(self, symbols: list[Symbol], counts: list[float]):
         self.symbols = self.build_wheel(symbols, counts)
         self.counts = counts
 
-    def build_wheel(
-        self, symbols: list[SlotSymbol], counts: list[float]
-    ) -> list[SlotSymbol]:
+    def build_wheel(self, symbols: list[Symbol], counts: list[float]) -> list[Symbol]:
         return sum(
             [[symbol] * int(count) for symbol, count in zip(symbols, counts)], []
         )
 
-    def spin(self, window: SlotWindow) -> list[SlotSymbol]:
+    def spin(self, window: Window) -> list[Symbol]:
         """Spin the wheel and return the result."""
         num_symbols_to_return = window.rows
         # return a window of symbols, keeping adjacent symbols in the same row
@@ -54,13 +53,13 @@ class SlotWheel:
             result.append(next(wrapped_symbols))
         return result
 
-    def get_count(self, symbol: SlotSymbol) -> float:
+    def get_count(self, symbol: Symbol) -> float:
         return self.counts[self.symbols.index(symbol)]
 
 
 class PayRule:
     def __init__(
-        self, num_symbols: int, payout: float, symbol: Optional[SlotSymbol] = None
+        self, num_symbols: int, payout: float, symbol: Optional[Symbol] = None
     ):
         self.num_symbols = num_symbols
         self.payout = payout
@@ -68,49 +67,51 @@ class PayRule:
 
 
 @dataclass
-class SlotGameBase:
+class GameBase:
     """Define a 'base' game for the slot machine."""
 
     name: str
-    paylines: list[SlotPayline]
+    paylines: list[Payline]
     pay_rules: list[PayRule]
-    reels: list[SlotWheel]
+    reels: list[Reelstrip]
 
 
-class SlotMachine:
+class Machine:
     current_game_idx: int
 
-    def __init__(self, games: list[SlotGameBase], window: SlotWindow):
+    def __init__(self, games: list[GameBase], window: Window):
         if len(games) < 1:
             raise ValueError("At least one game must be provided.")
         for game in games:
             if len(game.reels) != window.cols:
                 raise ValueError(
-                    f"Invalid number of reels: {len(game.reels)}. Must be equal to the number of columns in the window ({window.cols})."
+                    f"Invalid number of reels: {len(game.reels)}."
+                    " Must be equal to the number of columns in the window ({window.cols})."
                 )
             for payline in game.paylines:
                 for idx in payline.indices:
                     if idx >= window.rows:
                         raise ValueError(
-                            f"Invalid payline index: {idx}. Must be less than the number of rows in the window ({window.rows})."
+                            f"Invalid payline index: {idx}. Must be less than the number of rows in"
+                            " the window ({window.rows})."
                         )
         self.games = games
         self.window = window
         self.current_game_idx = 0
 
     @classmethod
-    def default(cls) -> "SlotMachine":
+    def default(cls) -> "Machine":
         return cls(
             [
-                SlotGameBase(
+                GameBase(
                     "g01",
-                    [SlotPayline([1, 1, 1])],
-                    [PayRule(3, 2.0, SlotSymbol("A"))],
+                    [Payline([1, 1, 1])],
+                    [PayRule(3, 2.0, Symbol("A"))],
                     [
-                        SlotWheel(
+                        Reelstrip(
                             [
-                                SlotSymbol("A"),
-                                SlotSymbol("X"),
+                                Symbol("A"),
+                                Symbol("X"),
                             ],
                             [1, 9],
                         )
@@ -118,15 +119,15 @@ class SlotMachine:
                     ],
                 )
             ],
-            SlotWindow(3, 3),
+            Window(3, 3),
         )
 
-    def pull_lever(self) -> list[list[SlotSymbol]]:
+    def pull_lever(self) -> list[list[Symbol]]:
         return [
             wheel.spin(self.window) for wheel in self.games[self.current_game_idx].reels
         ]
 
-    def evaluate(self, result: list[list[SlotSymbol]]) -> int:
+    def evaluate(self, result: list[list[Symbol]]) -> int:
         """Evaluate the result and return the winnings."""
         for payline in self.games[self.current_game_idx].paylines:
             symbols = []
@@ -150,8 +151,24 @@ class SlotMachine:
                 return True
         return False
 
+    @property
+    def prob_winning(self) -> float:
+        """Calculate the probability of winning [0., 1.]"""
+        return prod(
+            [
+                (
+                    reel.get_count(pay_rule.symbol) / sum(reel.counts)
+                    if pay_rule.symbol is not None
+                    else sum(reel.counts) / len(reel.symbols)
+                )
+                for reel in self.games[self.current_game_idx].reels
+                for pay_rule in self.games[self.current_game_idx].pay_rules
+            ]
+        )
+
 
 if __name__ == "__main__":
-    slot_machine = SlotMachine.default()
+    slot_machine = Machine.default()
     print(slot_machine.pull_lever())
     print(slot_machine.evaluate(slot_machine.pull_lever()))
+    print(slot_machine.prob_winning)

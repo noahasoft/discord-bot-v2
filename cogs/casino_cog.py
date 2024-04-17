@@ -4,12 +4,12 @@ from discord.ext import commands
 
 from cogs.games.slots import (
     PayRule,
-    SlotPayline,
-    SlotGameBase,
-    SlotMachine,
-    SlotSymbol,
-    SlotWheel,
-    SlotWindow,
+    Payline,
+    GameBase,
+    Machine,
+    Symbol,
+    Reelstrip,
+    Window,
 )
 
 
@@ -18,17 +18,17 @@ class CasinoCog(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.economy_cog = self.bot.get_cog("EconomyCog")
-        self.slot_machine = SlotMachine(
+        self.slot_machine = Machine(
             [
-                SlotGameBase(
+                GameBase(
                     "g01",
-                    [SlotPayline([1, 1, 1])],
+                    [Payline([1, 1, 1])],
                     [PayRule(3, 2.0)],
                     [
-                        SlotWheel(
+                        Reelstrip(
                             [
-                                SlotSymbol(":apple:"),
-                                SlotSymbol(":banana:"),
+                                Symbol(":apple:"),
+                                Symbol(":banana:"),
                             ],
                             [6, 4],
                         )
@@ -36,7 +36,7 @@ class CasinoCog(commands.Cog):
                     ],
                 )
             ],
-            SlotWindow(3, 3),
+            Window(3, 3),
         )
 
     @app_commands.command()
