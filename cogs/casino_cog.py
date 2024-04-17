@@ -52,8 +52,12 @@ class CasinoCog(commands.Cog):
         winnings = self.slot_machine.evaluate(result) * bet
         response = ""
         for row in range(self.slot_machine.window.rows):
-            for wheel in result:
-                response += wheel[row].name + " "
+            for (widx, wheel) in enumerate(result):
+                if self.slot_machine.is_on_scoreline(row, widx):
+                    response += "**" + wheel[row].name + "** "
+                else:
+                    response += wheel[row].name + " "
+            # Only supports linear paylines for now
             if self.slot_machine.is_on_scoreline(row, 0):
                 response += " <<<"
             response += "\n"
