@@ -57,13 +57,19 @@ class SlotWheel:
         return self.counts[self.symbols.index(symbol)]
 
 
+class PayRule:
+    def __init__(self, num_symbols: int, payout: float):
+        self.num_symbols = num_symbols
+        self.payout = payout
+
+
 @dataclass
 class SlotGameBase:
     """Define a 'base' game for the slot machine."""
 
     name: str
     paylines: list[SlotPayline]
-    pay_rules: dict[int, float]
+    pay_rules: list[PayRule]
     reels: list[SlotWheel]
 
 
@@ -82,14 +88,14 @@ class SlotMachine:
                 SlotGameBase(
                     "g01",
                     [SlotPayline([1, 1, 1])],
-                    {3: 1.0},
+                    [PayRule(3, 2.0)],
                     [
                         SlotWheel(
                             [
                                 SlotSymbol("A"),
                                 SlotSymbol("X"),
                             ],
-                            [5, 5],
+                            [1, 9],
                         )
                         for _ in range(3)
                     ],
@@ -109,7 +115,13 @@ class SlotMachine:
             for wheel, idx in enumerate(payline.indices):
                 symbols.append(result[wheel][idx])
             if len(set(symbols)) == 1:
-                return self.games[self.current_game_idx].pay_rules[len(symbols)]
+                for pay_rule in self.games[self.current_game_idx].pay_rules:
+                    if pay_rule.num_symbols == len(symbols):
+                        return pay_rule.payout
+                    raise ValueError(
+                        f"Invalid pay rule: {pay_rule}: {len(symbols)} symbols matched. Expected {pay_rule.num_symbols}. "
+                        "Please add a pay rule for this case."
+                    )
         return 0
 
     @property
@@ -121,6 +133,7 @@ class SlotMachine:
             if row == payline.indices[wheel_idx]:
                 return True
         return False
+
 
 if __name__ == "__main__":
     slot_machine = SlotMachine.default()
