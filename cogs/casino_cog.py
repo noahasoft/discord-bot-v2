@@ -2,7 +2,13 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from cogs.games.slots import SlotMachine
+from cogs.games.slots import (
+    SlotPayline,
+    SlotGameBase,
+    SlotMachine,
+    SlotSymbol,
+    SlotWheel,
+)
 
 
 @app_commands.guild_only()
@@ -10,7 +16,25 @@ class CasinoCog(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.economy_cog = self.bot.get_cog("EconomyCog")
-        self.slot_machine = SlotMachine.default()
+        self.slot_machine = SlotMachine(
+            [
+                SlotGameBase(
+                    "g01",
+                    [SlotPayline([1, 1, 1])],
+                    {3: 2.0},
+                    [
+                        SlotWheel(
+                            [
+                                SlotSymbol(":apple:"),
+                                SlotSymbol(":banana:"),
+                            ],
+                            [6, 4],
+                        )
+                        for _ in range(3)
+                    ],
+                )
+            ]
+        )
 
     @app_commands.command()
     async def slots(self, interaction: discord.Interaction, bet: int):
@@ -24,19 +48,25 @@ class CasinoCog(commands.Cog):
             await interaction.response.send_message("Insufficient balance.")
             return
 
-        slot1, slot2, slot3 = self.slot_machine.pull_lever()
-        response = f"{slot1} {slot2} {slot3}"
+        result = self.slot_machine.pull_lever()
+        winnings = self.slot_machine.evaluate(result) * bet
+        response = ""
+        for row in range(self.slot_machine.window.rows):
+            for widx, wheel in enumerate(result):
+                if self.slot_machine.is_on_scoreline(row, widx):
+                    response += f"**{wheel[row].name}** "
+                else:
+                    response += wheel[row].name + " "
+            response += "\n"
 
-        if slot1 == slot2 == slot3:
-            winnings = self.slot_machine.get_winnings(slot1, slot2, slot3, bet)
+        if winnings > 0:
             await self.economy_cog.deposit_money(interaction.user.id, winnings)
             await interaction.response.send_message(
-                f"{response}\Congratulations! You won {winnings}!"
+                f"{response}\nCongratulations! You won {winnings}!"
             )
             self.jackpot_users.append(interaction.user.id)
         else:
             await self.economy_cog.withdraw_money(interaction.user.id, bet)
-            self.lottery_jackpot += bet
             await interaction.response.send_message(
                 f"{response}\nBetter luck next time! You lost {bet}."
             )
