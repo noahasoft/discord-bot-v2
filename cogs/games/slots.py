@@ -2,6 +2,7 @@ import random
 from itertools import cycle
 
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -58,9 +59,12 @@ class SlotWheel:
 
 
 class PayRule:
-    def __init__(self, num_symbols: int, payout: float):
+    def __init__(
+        self, num_symbols: int, payout: float, symbol: Optional[SlotSymbol] = None
+    ):
         self.num_symbols = num_symbols
         self.payout = payout
+        self.symbol = symbol
 
 
 @dataclass
@@ -101,7 +105,7 @@ class SlotMachine:
                 SlotGameBase(
                     "g01",
                     [SlotPayline([1, 1, 1])],
-                    [PayRule(3, 2.0)],
+                    [PayRule(3, 2.0, SlotSymbol("A"))],
                     [
                         SlotWheel(
                             [
@@ -130,12 +134,10 @@ class SlotMachine:
                 symbols.append(result[wheel][idx])
             if len(set(symbols)) == 1:
                 for pay_rule in self.games[self.current_game_idx].pay_rules:
-                    if pay_rule.num_symbols == len(symbols):
+                    if pay_rule.num_symbols == len(symbols) and (
+                        pay_rule.symbol is None or pay_rule.symbol in symbols
+                    ):
                         return pay_rule.payout
-                    raise ValueError(
-                        f"Invalid pay rule: {pay_rule}: {len(symbols)} symbols matched. Expected {pay_rule.num_symbols}. "
-                        "Please add a pay rule for this case."
-                    )
         return 0
 
     @property
