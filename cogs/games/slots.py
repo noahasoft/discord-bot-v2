@@ -118,7 +118,7 @@ class SlotMachine:
 
     def is_on_scoreline(self, row: int, wheel_idx: int) -> bool:
         for payline in self.games[self.current_game_idx].paylines:
-            if row in payline.indices[wheel_idx]:
+            if row == payline.indices[wheel_idx]:
                 return True
         return False
 
