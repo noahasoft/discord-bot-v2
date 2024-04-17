@@ -52,21 +52,20 @@ class CasinoCog(commands.Cog):
         winnings = self.slot_machine.evaluate(result) * bet
         response = ""
         for row in range(self.slot_machine.window.rows):
-            for widx, wheel in enumerate(result):
-                if self.slot_machine.is_on_scoreline(row, widx):
-                    response += f"**{wheel[row].name}** "
-                else:
-                    response += wheel[row].name + " "
+            for wheel in result:
+                response += wheel[row].name + " "
+            if self.slot_machine.is_on_scoreline(row, 0):
+                response += " <<<"
             response += "\n"
 
         if winnings > 0:
             await self.economy_cog.deposit_money(interaction.user.id, winnings)
             await interaction.response.send_message(
-                f"{response}\nCongratulations! You won {winnings}!"
+                f"{response}\nCongratulations! You won ${winnings:.2f}!"
             )
             self.jackpot_users.append(interaction.user.id)
         else:
             await self.economy_cog.withdraw_money(interaction.user.id, bet)
             await interaction.response.send_message(
-                f"{response}\nBetter luck next time! You lost {bet}."
+                f"{response}\nBetter luck next time! You lost ${bet:.2f}."
             )
