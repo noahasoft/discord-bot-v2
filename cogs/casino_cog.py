@@ -3,11 +3,13 @@ from discord import app_commands
 from discord.ext import commands
 
 from cogs.games.slots import (
+    PayRule,
     SlotPayline,
     SlotGameBase,
     SlotMachine,
     SlotSymbol,
     SlotWheel,
+    SlotWindow,
 )
 
 
@@ -21,7 +23,7 @@ class CasinoCog(commands.Cog):
                 SlotGameBase(
                     "g01",
                     [SlotPayline([1, 1, 1])],
-                    {3: 2.0},
+                    [PayRule(3, 2.0)],
                     [
                         SlotWheel(
                             [
@@ -33,7 +35,8 @@ class CasinoCog(commands.Cog):
                         for _ in range(3)
                     ],
                 )
-            ]
+            ],
+            SlotWindow(3, 3),
         )
 
     @app_commands.command()
@@ -67,7 +70,6 @@ class CasinoCog(commands.Cog):
             await interaction.response.send_message(
                 f"{response}\nCongratulations! You won ${winnings:.2f}!"
             )
-            self.jackpot_users.append(interaction.user.id)
         else:
             await self.economy_cog.withdraw_money(interaction.user.id, bet)
             await interaction.response.send_message(

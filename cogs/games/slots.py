@@ -74,12 +74,25 @@ class SlotGameBase:
 
 
 class SlotMachine:
-    def __init__(
-        self, games: list[SlotGameBase], window: SlotWindow = SlotWindow(3, 3)
-    ):
+    current_game_idx: int
+
+    def __init__(self, games: list[SlotGameBase], window: SlotWindow):
+        if len(games) < 1:
+            raise ValueError("At least one game must be provided.")
+        for game in games:
+            if len(game.reels) != window.cols:
+                raise ValueError(
+                    f"Invalid number of reels: {len(game.reels)}. Must be equal to the number of columns in the window ({window.cols})."
+                )
+            for payline in game.paylines:
+                for idx in payline.indices:
+                    if idx >= window.rows:
+                        raise ValueError(
+                            f"Invalid payline index: {idx}. Must be less than the number of rows in the window ({window.rows})."
+                        )
         self.games = games
-        self.current_game_idx = 0
         self.window = window
+        self.current_game_idx = 0
 
     @classmethod
     def default(cls) -> "SlotMachine":
@@ -100,7 +113,8 @@ class SlotMachine:
                         for _ in range(3)
                     ],
                 )
-            ]
+            ],
+            SlotWindow(3, 3),
         )
 
     def pull_lever(self) -> list[list[SlotSymbol]]:
