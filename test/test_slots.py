@@ -112,3 +112,19 @@ def test_machine_no_win():
     winnings = machine.evaluate(result)
     assert winnings == 0
 
+def test_not_rule():
+    symbol_a = Symbol("A")
+    symbol_b = Symbol("B")
+    games = [
+        GameBase(
+            "Game1",
+            [Payline([0, 0, 0])],
+            [PayRule(2, 1000, symbol_a)],
+            [Reelstrip([symbol_a, symbol_b], [1, 1]) for _ in range(3)]
+        )
+    ]
+    window = Window(1, 3)
+    machine = Machine(games, window)
+    result = [[symbol_a], [symbol_a], [symbol_b]]
+    winnings = machine.evaluate(result)
+    assert winnings == 1000

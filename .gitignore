@@ -7,3 +7,4 @@ venv/
 *.egg
 *.db
 __pycache__
+.vscode/

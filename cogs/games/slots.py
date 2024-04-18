@@ -134,12 +134,9 @@ class Machine:
             symbols = []
             for wheel, idx in enumerate(payline.indices):
                 symbols.append(result[wheel][idx])
-            if len(set(symbols)) == 1:
-                for pay_rule in self.games[self.current_game_idx].pay_rules:
-                    if pay_rule.num_symbols == len(symbols) and (
-                        pay_rule.symbol is None or pay_rule.symbol in symbols
-                    ):
-                        return pay_rule.payout
+            for pay_rule in self.games[self.current_game_idx].pay_rules:
+                if symbols.count(pay_rule.symbol) == pay_rule.num_symbols:
+                    return pay_rule.payout
         return 0
 
     @property
