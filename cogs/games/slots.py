@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from typing import Optional
 import warnings
 
+ROUNDING_PRECISION = 6
+
 
 @dataclass
 class Symbol:
@@ -165,36 +167,50 @@ class Machine:
         )
         if rv == 0:
             warnings.warn("The probability of winning is zero. Check the pay rules.")
-        return round(rv, 6)
+        return round(rv, ROUNDING_PRECISION)
 
     @property
     def hit_rate(self) -> float:
         """Calculate the hit rate of the slot machine. [0., inf]"""
         if self.prob_winning == 0:
             return float("inf")
-        return round(1 / self.prob_winning, 6)
+        return round(1 / self.prob_winning, ROUNDING_PRECISION)
 
     @property
     def hit_frequency(self) -> float:
         """Calculate the hit frequency of the slot machine. [0., 1.]"""
-        return round(1 / self.hit_rate, 6) if self.hit_rate != 0 else 1.0
+        return (
+            round(1 / self.hit_rate, ROUNDING_PRECISION) if self.hit_rate != 0 else 1.0
+        )
 
     def rtp(self, avg_bet) -> float:
         """Calculate the return to player (RTP) of the slot machine. [0., 1.]"""
-        return round((
-            self.prob_winning
-            * sum(
-                [
-                    pay_rule.payout
-                    for pay_rule in self.games[self.current_game_idx].pay_rules
-                ]
+        return (
+            round(
+                (
+                    self.prob_winning
+                    * sum(
+                        [
+                            pay_rule.payout
+                            for pay_rule in self.games[self.current_game_idx].pay_rules
+                        ]
+                    )
+                )
+                / avg_bet,
+                ROUNDING_PRECISION,
             )
-        ) / avg_bet, 6) if avg_bet != 0 else 1.0
+            if avg_bet != 0
+            else 1.0
+        )
 
     @property
     def volatility(self) -> float:
         """Calculate the volatility of the slot machine. [0., inf]"""
-        return round(1 / self.rtp(1.0), 6) if self.rtp(1.0) != 0 else float("inf")
+        return (
+            round(1 / self.rtp(1.0), ROUNDING_PRECISION)
+            if self.rtp(1.0) != 0
+            else float("inf")
+        )
 
 
 if __name__ == "__main__":
