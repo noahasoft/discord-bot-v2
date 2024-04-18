@@ -31,6 +31,19 @@ class EconomyCog(commands.Cog):
         balance = await self.get_balance(interaction.user.id)
         await interaction.response.send_message(f"Balance: {balance}")
 
+    @app_commands.command()
+    async def leaderboard(self, interaction: discord.Interaction):
+        """Prints the server's leaderboard."""
+        async with aiosqlite.connect("economy.db") as db:
+            async with db.execute(
+                "SELECT user_id, balance FROM economy ORDER BY balance DESC LIMIT 10"
+            ) as cursor:
+                response = "Leaderboard:\n----------------\n"
+                for row in await cursor.fetchall():
+                    user = self.bot.get_user(row[0])
+                    response += f"`{user.name}`: ${row[1]:.2f}\n"
+                await interaction.response.send_message(response)
+
     @tasks.loop(time=datetime.time(hour=8, tzinfo=datetime.timezone.utc))
     async def daily(self):
         for user_id in await self.get_registered_users():
