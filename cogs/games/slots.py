@@ -168,23 +168,23 @@ class Machine:
         )
         if rv == 0:
             warnings.warn("The probability of winning is zero. Check the pay rules.")
-        return rv
+        return round(rv, 6)
 
     @property
     def hit_rate(self) -> float:
         """Calculate the hit rate of the slot machine. [0., inf]"""
         if self.prob_winning == 0:
             return float("inf")
-        return 1 / self.prob_winning
+        return round(1 / self.prob_winning, 6)
 
     @property
     def hit_frequency(self) -> float:
         """Calculate the hit frequency of the slot machine. [0., 1.]"""
-        return 1 / self.hit_rate
+        return round(1 / self.hit_rate, 6) if self.hit_rate != 0 else 1.0
 
     def rtp(self, avg_bet) -> float:
         """Calculate the return to player (RTP) of the slot machine. [0., 1.]"""
-        return (
+        return round((
             self.prob_winning
             * sum(
                 [
@@ -192,20 +192,20 @@ class Machine:
                     for pay_rule in self.games[self.current_game_idx].pay_rules
                 ]
             )
-        ) / avg_bet
+        ) / avg_bet, 6) if avg_bet != 0 else 1.0
 
     @property
     def volatility(self) -> float:
         """Calculate the volatility of the slot machine. [0., inf]"""
-        return 1 / self.rtp(1.0)
+        return round(1 / self.rtp(1.0), 6) if self.rtp(1.0) != 0 else float("inf")
 
 
 if __name__ == "__main__":
     slot_machine = Machine.default()
     print(slot_machine.pull_lever())
     print(slot_machine.evaluate(slot_machine.pull_lever()))
-    print(slot_machine.prob_winning)
-    print(slot_machine.hit_rate)
-    print(slot_machine.hit_frequency)
-    print(slot_machine.rtp(1.0))
-    print(slot_machine.volatility)
+    print("prob winning:", slot_machine.prob_winning)
+    print("hit rate:", slot_machine.hit_rate)
+    print("hit freq:", slot_machine.hit_frequency)
+    print("rtp(1):", slot_machine.rtp(1.0))
+    print("volatility:", slot_machine.volatility)
