@@ -24,9 +24,7 @@ class RoleCog(commands.Cog):
             )
             return
 
-        await self.make_role(
-            interaction.guild, role_name, role_color, role_permissions
-        )
+        await self.make_role(interaction.guild, role_name, role_color, role_permissions)
         await interaction.response.send_message(
             f"Role '{role_name}' created successfully."
         )
@@ -88,9 +86,7 @@ class RoleCog(commands.Cog):
             f"Role '{role_name}' removed from {member.name}."
         )
 
-    async def make_role(
-        self, guild: discord.Guild, name, color=None, permissions=None
-    ):
+    async def make_role(self, guild: discord.Guild, name, color=None, permissions=None):
         color = discord.Color(int(color)) if color else discord.Color.default()
         permissions = (
             discord.Permissions(permissions)

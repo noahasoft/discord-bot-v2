@@ -83,7 +83,7 @@ class Machine:
     current_game_idx: int
 
     def __init__(self, games: list[GameBase], window: Window):
-        if len(games) < 1:
+        if not games:
             raise ValueError("At least one game must be provided.")
         for game in games:
             if len(game.reels) != window.cols:
@@ -104,49 +104,35 @@ class Machine:
 
     @classmethod
     def default(cls) -> "Machine":
-        return cls(
-            [
-                GameBase(
-                    "g01",
-                    [Payline([1, 1, 1])],
-                    [PayRule(3, 1000, Symbol("A"))],
-                    [
-                        Reelstrip(
-                            [
-                                Symbol("A"),
-                                Symbol("X"),
-                            ],
-                            [1, 9],
-                        )
-                        for _ in range(3)
-                    ],
-                )
-            ],
-            Window(3, 3),
-        )
+        symbol_a = Symbol("A")
+        symbol_x = Symbol("X")
+        paylines = [Payline([1, 1, 1])]
+        pay_rules = [PayRule(3, 1000, symbol_a)]
+        reels = [Reelstrip([symbol_a, symbol_x], [1, 9]) for _ in range(3)]
+        return cls([GameBase("g01", paylines, pay_rules, reels)], Window(3, 3))
+
+    @property
+    def current_game(self):
+        return self.games[self.current_game_idx]
 
     def pull_lever(self) -> list[list[Symbol]]:
-        return [
-            wheel.spin(self.window) for wheel in self.games[self.current_game_idx].reels
-        ]
+        return [reel.spin(self.window) for reel in self.current_game.reels]
 
     def evaluate(self, result: list[list[Symbol]]) -> int:
         """Evaluate the result and return the winnings."""
-        for payline in self.games[self.current_game_idx].paylines:
-            symbols = []
-            for wheel, idx in enumerate(payline.indices):
-                symbols.append(result[wheel][idx])
-            for pay_rule in self.games[self.current_game_idx].pay_rules:
+        for payline in self.current_game.paylines:
+            symbols = [result[wheel][idx] for wheel, idx in enumerate(payline.indices)]
+            for pay_rule in self.current_game.pay_rules:
                 if symbols.count(pay_rule.symbol) == pay_rule.num_symbols:
                     return pay_rule.payout
         return 0
 
     @property
     def num_wheels(self) -> int:
-        return len(self.games[self.current_game_idx].reels)
+        return len(self.current_game.reels)
 
     def is_on_scoreline(self, row: int, wheel_idx: int) -> bool:
-        for payline in self.games[self.current_game_idx].paylines:
+        for payline in self.current_game.paylines:
             if row == payline.indices[wheel_idx]:
                 return True
         return False
@@ -161,8 +147,8 @@ class Machine:
                     if pay_rule.symbol is not None
                     else sum(reel.counts) / len(reel.symbols)
                 )
-                for reel in self.games[self.current_game_idx].reels
-                for pay_rule in self.games[self.current_game_idx].pay_rules
+                for reel in self.current_game.reels
+                for pay_rule in self.current_game.pay_rules
             ]
         )
         if rv == 0:
@@ -183,25 +169,11 @@ class Machine:
             round(1 / self.hit_rate, ROUNDING_PRECISION) if self.hit_rate != 0 else 1.0
         )
 
-    def rtp(self, avg_bet) -> float:
-        """Calculate the return to player (RTP) of the slot machine. [0., 1.]"""
-        return (
-            round(
-                (
-                    self.prob_winning
-                    * sum(
-                        [
-                            pay_rule.payout
-                            for pay_rule in self.games[self.current_game_idx].pay_rules
-                        ]
-                    )
-                )
-                / avg_bet,
-                ROUNDING_PRECISION,
-            )
-            if avg_bet != 0
-            else 1.0
-        )
+    def rtp(self, avg_bet: float) -> float:
+        if avg_bet == 0:
+            return 1.0
+        total_payout = sum(rule.payout for rule in self.current_game.pay_rules)
+        return round(self.prob_winning * total_payout / avg_bet, ROUNDING_PRECISION)
 
     @property
     def volatility(self) -> float:
