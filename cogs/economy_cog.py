@@ -10,11 +10,14 @@ class EconomyCog(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.daily_value = 100
+        self.passive_value = 10
 
     async def cog_load(self) -> None:
         await self.create_economy_table()
         await self.sync_members()
         self.daily.start()
+        self.passive_income.start()
+        self.scheduled_sync.start()
         await super().cog_load()
 
     async def sync_members(self):
@@ -48,6 +51,17 @@ class EconomyCog(commands.Cog):
     async def daily(self):
         for user_id in await self.get_registered_users():
             await self.deposit_money(user_id, self.daily_value)
+
+    @tasks.loop(minutes=15)
+    async def scheduled_sync(self):
+        await self.sync_members()
+
+    @tasks.loop(minutes=10)
+    async def passive_income(self):
+        # iterate over all visible members, check if they're in voice, and give them money
+        for member in self.bot.get_all_members():
+            if member.voice.channel is not None:
+                await self.deposit_money(member.id, self.passive_value)
 
     async def get_registered_users(self):
         async with aiosqlite.connect("economy.db") as db:
