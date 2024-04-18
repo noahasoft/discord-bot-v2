@@ -36,10 +36,7 @@ class VoiceCog(commands.Cog):
                 await self.depart_user(member, before.channel)
 
         # Joining a voice channel
-        if (
-            after.channel is not None
-            and after.channel != before.channel.guild.afk_channel
-        ):
+        if after.channel is not None:
             await self.greet_user(member)
 
     async def greet_user(self, member: discord.Member):
