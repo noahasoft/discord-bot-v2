@@ -24,7 +24,7 @@ class RoleCog(commands.Cog):
             )
             return
 
-        await self.create_role(
+        await self.make_role(
             interaction.guild, role_name, role_color, role_permissions
         )
         await interaction.response.send_message(
@@ -45,7 +45,7 @@ class RoleCog(commands.Cog):
             await interaction.response.send_message(f"Role '{role_name}' not found.")
             return
 
-        await self.delete_role(role)
+        await role.delete()
         await interaction.response.send_message(
             f"Role '{role_name}' deleted successfully."
         )
@@ -88,7 +88,7 @@ class RoleCog(commands.Cog):
             f"Role '{role_name}' removed from {member.name}."
         )
 
-    async def create_role(
+    async def make_role(
         self, guild: discord.Guild, name, color=None, permissions=None
     ):
         color = discord.Color(int(color)) if color else discord.Color.default()
@@ -98,9 +98,6 @@ class RoleCog(commands.Cog):
             else discord.Permissions(discord.Permissions.DEFAULT_VALUE)
         )
         await guild.create_role(name=name, color=color, permissions=permissions)
-
-    async def delete_role(self, role):
-        await role.delete()
 
     async def add_role_to_member(self, member, role_name):
         role = get(member.guild.roles, name=role_name)
