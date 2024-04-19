@@ -1,6 +1,7 @@
 from math import prod
 import random
 from itertools import cycle
+from collections import Counter
 
 from dataclasses import dataclass
 from typing import Optional
@@ -67,7 +68,10 @@ class Reelstrip:
         self.counts = counts
 
     def __iter__(self):
-        return zip(map(str, self.symbols), self.counts)
+        count = {}
+        for symbol in self.symbols:
+            count[symbol] = count.get(symbol, 0) + 1
+            yield str(symbol), count[symbol]
 
     def _build_wheel(self, symbols: list[Symbol], counts: list[float]) -> list[Symbol]:
         return sum(
@@ -88,7 +92,7 @@ class Reelstrip:
         return result
 
     def get_count(self, symbol: Symbol) -> float:
-        return self.counts[self.symbols.index(symbol)]
+        return Counter(self.symbols)[symbol]
 
     def __repr__(self) -> str:
         return f"Reelstrip({dict(self)})"
@@ -192,7 +196,7 @@ class Machine:
     def num_wheels(self) -> int:
         return len(self.current_game.reels)
 
-    def is_on_scoreline(self, row: int, wheel_idx: int) -> bool:
+    def is_on_scoreline(self, wheel_idx: int, row: int) -> bool:
         for payline in self.current_game.paylines:
             if row == payline.indices[wheel_idx]:
                 return True

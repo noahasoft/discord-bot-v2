@@ -55,12 +55,12 @@ class CasinoCog(commands.Cog):
         response = ""
         for row in range(self.slot_machine.window.rows):
             for (widx, wheel) in enumerate(result):
-                if self.slot_machine.is_on_scoreline(row, widx):
+                if self.slot_machine.is_on_scoreline(widx, row):
                     response += "**" + wheel[row].name + "** "
                 else:
                     response += wheel[row].name + " "
             # Only supports linear paylines for now
-            if self.slot_machine.is_on_scoreline(row, 0):
+            if self.slot_machine.is_on_scoreline(0, row):
                 response += " <<<"
             response += "\n"
 
