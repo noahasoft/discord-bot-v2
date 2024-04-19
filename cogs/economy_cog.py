@@ -41,7 +41,7 @@ class EconomyCog(commands.Cog):
         """Prints the server's leaderboard."""
         async with aiosqlite.connect("economy.db") as db:
             async with db.execute(
-                "SELECT user_id, balance FROM economy ORDER BY balance DESC LIMIT 10"
+                "SELECT user_id, SUM(value) as balance FROM transactions GROUP BY user_id ORDER BY balance DESC LIMIT 10"
             ) as cursor:
                 response = "Leaderboard:\n----------------\n"
                 for row in await cursor.fetchall():
@@ -76,47 +76,43 @@ class EconomyCog(commands.Cog):
 
     async def get_registered_users(self):
         async with aiosqlite.connect("economy.db") as db:
-            async with db.execute("SELECT user_id FROM economy") as cursor:
-                return [row[0] async for row in cursor]
+            # Get all unique user IDs from the transactions table
+            async with db.execute("SELECT user_id FROM transactions") as cursor:
+                return set([row[0] for row in await cursor.fetchall()])
 
     async def create_economy_table(self):
         async with aiosqlite.connect("economy.db") as db:
             await db.execute(
-                "CREATE TABLE IF NOT EXISTS economy (user_id INTEGER PRIMARY KEY, balance INTEGER DEFAULT 0)"
-            )
-            await db.commit()
-
-    async def create_if_not_exists(self, user_id: int):
-        async with aiosqlite.connect("economy.db") as db:
-            await db.execute(
-                "INSERT OR IGNORE INTO economy (user_id, balance) VALUES (?, ?)",
-                (user_id, 0),
+                "CREATE TABLE IF NOT EXISTS transactions ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "user_id INTEGER NOT NULL, "
+                "value INTEGER NOT NULL, "
+                "timestamp TEXT NOT NULL DEFAULT (datetime('now')), "
+                "description TEXT NOT NULL)"
             )
             await db.commit()
 
     async def get_balance(self, user_id: int) -> int:
-        await self.create_if_not_exists(user_id)
         async with aiosqlite.connect("economy.db") as db:
             async with db.execute(
-                "SELECT balance FROM economy WHERE user_id = ?", (user_id,)
+                "SELECT SUM(value) as balance FROM transactions WHERE user_id = ?",
+                (user_id,),
             ) as cursor:
-                row = await cursor.fetchone()
-                return row[0] if row is not None else 0
+                result = await cursor.fetchone()
+                return result[0] if result[0] is not None else 0
 
-    async def withdraw_money(self, user_id: int, amount: int):
-        await self.create_if_not_exists(user_id)
+    async def deposit_money(self, user_id: int, amount: int):
         async with aiosqlite.connect("economy.db") as db:
             await db.execute(
-                "UPDATE economy SET balance = balance - ? WHERE user_id = ?",
-                (amount, user_id),
+                "INSERT INTO transactions (user_id, value, description) VALUES (?, ?, 'deposit')",
+                (user_id, amount),
             )
             await db.commit()
 
-    async def deposit_money(self, user_id: int, amount: int):
-        await self.create_if_not_exists(user_id)
+    async def withdraw_money(self, user_id: int, amount: int):
         async with aiosqlite.connect("economy.db") as db:
             await db.execute(
-                "UPDATE economy SET balance = balance + ? WHERE user_id = ?",
-                (amount, user_id),
+                "INSERT INTO transactions (user_id, value, description) VALUES (?, ?, 'withdrawal')",
+                (user_id, -amount),
             )
             await db.commit()
