@@ -26,6 +26,8 @@ class EconomyCog(commands.Cog):
 
     async def cog_unload(self) -> None:
         self.daily.stop()
+        self.passive_income.stop()
+        self.scheduled_sync.stop()
         await super().cog_unload()
 
     @app_commands.command()
@@ -50,7 +52,10 @@ class EconomyCog(commands.Cog):
     @tasks.loop(time=datetime.time(hour=8, tzinfo=datetime.timezone.utc))
     async def daily(self):
         for user_id in await self.get_registered_users():
-            await self.deposit_money(user_id, self.daily_value)
+            try:
+                await self.deposit_money(user_id, self.passive_value)
+            except Exception as e:
+                print(f"Failed to deposit daily money for {user_id}: {str(e)}")
 
     @tasks.loop(minutes=15)
     async def scheduled_sync(self):
@@ -60,8 +65,14 @@ class EconomyCog(commands.Cog):
     async def passive_income(self):
         # iterate over all visible members, check if they're in voice, and give them money
         for member in self.bot.get_all_members():
-            if member.voice.channel is not None:
-                await self.deposit_money(member.id, self.passive_value)
+            print(
+                f"Checking member: {member.name} (ID: {member.id}) for passive income."
+            )
+            if member.voice and member.voice.channel is not None:
+                try:
+                    await self.deposit_money(member.id, self.passive_value)
+                except Exception as e:
+                    print(f"Failed to deposit passive money for {member.id}: {str(e)}")
 
     async def get_registered_users(self):
         async with aiosqlite.connect("economy.db") as db:
