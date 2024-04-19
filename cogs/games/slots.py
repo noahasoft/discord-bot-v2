@@ -250,14 +250,3 @@ class Machine:
             if self.rtp(1.0) != 0
             else float("inf")
         )
-
-
-if __name__ == "__main__":
-    slot_machine = Machine.default()
-    print(slot_machine.pull_lever())
-    print(slot_machine.evaluate(slot_machine.pull_lever()))
-    print("prob winning:", slot_machine.prob_winning)
-    print("hit rate:", slot_machine.hit_rate(PayRule(3, 1000, Symbol("A"))))
-    print("hit freq:", slot_machine.hit_frequency(PayRule(3, 1000, Symbol("A"))))
-    print("rtp(1):", slot_machine.rtp(1.0))
-    print("volatility:", slot_machine.volatility)
