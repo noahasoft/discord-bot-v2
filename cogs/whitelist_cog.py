@@ -54,8 +54,10 @@ class WhitelistCog(commands.Cog):
         whitelist = [
             f"`{self.bot.get_user(user_id[0]).name}`" for user_id in whitelist_ids
         ]
-        await interaction.response.send_message(f"Whitelist: {', '.join(whitelist)}")
+        repsonse = "Whitelist:\n----------------\n" + "\n".join(whitelist)
+        await interaction.response.send_message(repsonse)
 
+    # Database methods
     async def create_whitelist_table(self):
         async with aiosqlite.connect("whitelist.db") as db:
             await db.execute(
