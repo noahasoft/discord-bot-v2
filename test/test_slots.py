@@ -173,3 +173,41 @@ def test_validate_game_window_invalid_payline_index():
     )
     with pytest.raises(ValueError):
         Machine.validate_game_window(window, game)
+
+
+def test_evaluate_multiple_paylines():
+    symbol_a = Symbol("A")
+    symbol_b = Symbol("B")
+    games = [
+        GameBase(
+            "Game1",
+            [Payline([0, 1, 2]), Payline([0, 0, 0])],
+            [PayRule(3, 1000, symbol_a), PayRule(3, 500, symbol_b)],
+            [Reelstrip([symbol_a, symbol_b], [3, 3]) for _ in range(3)],
+        )
+    ]
+    window = Window(3, 3)
+    machine = Machine(games, window)
+    result = [
+        [symbol_a, symbol_b, symbol_b],
+        [symbol_b, symbol_a, symbol_b],
+        [symbol_b, symbol_b, symbol_a],
+    ]
+    winnings = machine.evaluate(result)
+    assert winnings == 1000
+
+    result = [
+        [symbol_b, symbol_b, symbol_b],
+        [symbol_b, symbol_a, symbol_b],
+        [symbol_b, symbol_b, symbol_a],
+    ]
+    winnings = machine.evaluate(result)
+    assert winnings == 500
+
+
+def test_reelstrip_str():
+    symbols = [Symbol("A"), Symbol("B")]
+    counts = [1, 3]
+    reel = Reelstrip(symbols, counts)
+    expected_str = "{'A': 1, 'B': 3}"
+    assert str(reel) == expected_str

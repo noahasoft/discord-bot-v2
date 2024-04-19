@@ -19,6 +19,9 @@ class Symbol:
     def __hash__(self) -> int:
         return hash(self.name)
 
+    def __repr__(self) -> str:
+        return f"Symbol({self.name})"
+
 
 class Payline:
     def __init__(self, indices: list[int]):
@@ -27,16 +30,28 @@ class Payline:
     def __getitem__(self, idx: int) -> int:
         return self.indices[idx]
 
+    def __str__(self) -> str:
+        return str(self.indices)
+
+    def __repr__(self) -> str:
+        return f"Payline({self.indices})"
+
 
 class Window:
     def __init__(self, rows: int, cols: int) -> None:
         self.rows, self.cols = rows, cols
+
+    def __repr__(self) -> str:
+        return f"Window({self.rows}, {self.cols})"
 
 
 class Reelstrip:
     def __init__(self, symbols: list[Symbol], counts: list[float]):
         self.symbols = self.build_wheel(symbols, counts)
         self.counts = counts
+
+    def __iter__(self):
+        return zip(map(str, self.symbols), self.counts)
 
     def build_wheel(self, symbols: list[Symbol], counts: list[float]) -> list[Symbol]:
         return sum(
@@ -59,6 +74,12 @@ class Reelstrip:
     def get_count(self, symbol: Symbol) -> float:
         return self.counts[self.symbols.index(symbol)]
 
+    def __repr__(self) -> str:
+        return f"Reelstrip({dict(self)})"
+
+    def __str__(self) -> str:
+        return str(dict(self))
+
 
 class PayRule:
     def __init__(
@@ -67,6 +88,9 @@ class PayRule:
         self.num_symbols = num_symbols
         self.payout = payout
         self.symbol = symbol
+
+    def __repr__(self) -> str:
+        return f"PayRule({self.num_symbols}, {self.payout}, {self.symbol})"
 
 
 class GameBase:
@@ -88,6 +112,9 @@ class GameBase:
         self.paylines = paylines
         self.pay_rules = pay_rules
         self.reels = reels
+
+    def __repr__(self) -> str:
+        return f"GameBase({self.name})"
 
 
 class Machine:
