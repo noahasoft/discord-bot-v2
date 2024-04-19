@@ -120,12 +120,14 @@ class Machine:
 
     def evaluate(self, result: list[list[Symbol]]) -> int:
         """Evaluate the result and return the winnings."""
+        best_payout: Optional[PayRule] = None
         for payline in self.current_game.paylines:
             symbols = [result[wheel][idx] for wheel, idx in enumerate(payline.indices)]
             for pay_rule in self.current_game.pay_rules:
                 if symbols.count(pay_rule.symbol) == pay_rule.num_symbols:
-                    return pay_rule.payout
-        return 0
+                    if best_payout is None or pay_rule.payout > best_payout.payout:
+                        best_payout = pay_rule
+        return best_payout.payout if best_payout is not None else 0
 
     @property
     def num_wheels(self) -> int:
