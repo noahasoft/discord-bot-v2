@@ -99,7 +99,10 @@ class EconomyCog(commands.Cog):
                 (user_id,),
             ) as cursor:
                 result = await cursor.fetchone()
-                return result[0] if result[0] is not None else 0
+                if result is not None and result[0] is not None:
+                    return result[0]
+                else:
+                    return 0
 
     async def deposit_money(self, user_id: int, amount: int, description: str = "deposit"):
         async with aiosqlite.connect("economy.db") as db:
