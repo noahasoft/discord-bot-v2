@@ -69,7 +69,6 @@ class PayRule:
         self.symbol = symbol
 
 
-@dataclass
 class GameBase:
     """Define a 'base' game for the slot machine."""
 
@@ -77,6 +76,18 @@ class GameBase:
     paylines: list[Payline]
     pay_rules: list[PayRule]
     reels: list[Reelstrip]
+
+    def __init__(
+        self,
+        name: str,
+        paylines: list[Payline],
+        pay_rules: list[PayRule],
+        reels: list[Reelstrip],
+    ):
+        self.name = name
+        self.paylines = paylines
+        self.pay_rules = pay_rules
+        self.reels = reels
 
 
 class Machine:
@@ -86,21 +97,26 @@ class Machine:
         if not games:
             raise ValueError("At least one game must be provided.")
         for game in games:
-            if len(game.reels) != window.cols:
-                raise ValueError(
-                    f"Invalid number of reels: {len(game.reels)}."
-                    " Must be equal to the number of columns in the window ({window.cols})."
-                )
-            for payline in game.paylines:
-                for idx in payline.indices:
-                    if idx >= window.rows:
-                        raise ValueError(
-                            f"Invalid payline index: {idx}. Must be less than the number of rows in"
-                            " the window ({window.rows})."
-                        )
+            self.validate_game_window(window, game)
         self.games = games
         self.window = window
         self.current_game_idx = 0
+
+    @staticmethod
+    def validate_game_window(window: Window, game: GameBase) -> None:
+        """Ensure the game and window are compatible."""
+        if len(game.reels) != window.cols:
+            raise ValueError(
+                f"Invalid number of reels: {len(game.reels)}."
+                " Must be equal to the number of columns in the window ({window.cols})."
+            )
+        for payline in game.paylines:
+            for idx in payline.indices:
+                if idx >= window.rows:
+                    raise ValueError(
+                        f"Invalid payline index: {idx}. Must be less than the number of rows in"
+                        " the window ({window.rows})."
+                    )
 
     @classmethod
     def default(cls) -> "Machine":
@@ -120,14 +136,14 @@ class Machine:
 
     def evaluate(self, result: list[list[Symbol]]) -> int:
         """Evaluate the result and return the winnings."""
-        best_payout: Optional[PayRule] = None
+        best_payrule: Optional[PayRule] = None
         for payline in self.current_game.paylines:
             symbols = [result[wheel][idx] for wheel, idx in enumerate(payline.indices)]
             for pay_rule in self.current_game.pay_rules:
                 if symbols.count(pay_rule.symbol) == pay_rule.num_symbols:
-                    if best_payout is None or pay_rule.payout > best_payout.payout:
-                        best_payout = pay_rule
-        return best_payout.payout if best_payout is not None else 0
+                    if best_payrule is None or pay_rule.payout > best_payrule.payout:
+                        best_payrule = pay_rule
+        return best_payrule.payout if best_payrule is not None else 0
 
     @property
     def num_wheels(self) -> int:
