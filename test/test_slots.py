@@ -211,3 +211,14 @@ def test_reelstrip_str():
     reel = Reelstrip(symbols, counts)
     expected_str = "{'A': 1, 'B': 3}"
     assert str(reel) == expected_str
+
+
+def test_build_wheel():
+    symbols = [Symbol("A"), Symbol("B"), Symbol("C")]
+    counts = [1, 2, 3]
+    reel = Reelstrip(symbols, counts)
+    wheel = reel.build_wheel(symbols, counts)
+    assert len(wheel) == 6
+    assert wheel.count(Symbol("A")) == 1
+    assert wheel.count(Symbol("B")) == 2
+    assert wheel.count(Symbol("C")) == 3
