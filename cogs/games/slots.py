@@ -198,8 +198,7 @@ class Machine:
                 return True
         return False
 
-    @property
-    def prob_winning(self) -> float:
+    def prob_winning(self, pay_rule: PayRule) -> float:
         """Calculate the probability of winning [0., 1.]"""
         rv = prod(
             [
@@ -209,32 +208,35 @@ class Machine:
                     else sum(reel.counts) / len(reel.symbols)
                 )
                 for reel in self.current_game.reels
-                for pay_rule in self.current_game.pay_rules
             ]
         )
         if rv == 0:
             warnings.warn("The probability of winning is zero. Check the pay rules.")
         return round(rv, ROUNDING_PRECISION)
 
-    @property
-    def hit_rate(self) -> float:
+    def hit_rate(self, pay_rule: PayRule) -> float:
         """Calculate the hit rate of the slot machine. [0., inf]"""
         if self.prob_winning == 0:
             return float("inf")
-        return round(1 / self.prob_winning, ROUNDING_PRECISION)
+        return round(1 / self.prob_winning(pay_rule), ROUNDING_PRECISION)
+
+    def hit_frequency(self, pay_rule) -> float:
+        """Calculate the hit frequency of the slot machine. [0., 1.]"""
+        hit_rate = self.hit_rate(pay_rule)
+        return round(1 / hit_rate, ROUNDING_PRECISION) if hit_rate != 0 else 1.0
 
     @property
-    def hit_frequency(self) -> float:
-        """Calculate the hit frequency of the slot machine. [0., 1.]"""
-        return (
-            round(1 / self.hit_rate, ROUNDING_PRECISION) if self.hit_rate != 0 else 1.0
-        )
+    def total_prob_winning(self) -> float:
+        """Calculate the total probability of winning [0., 1.]"""
+        return sum(self.prob_winning(rule) for rule in self.current_game.pay_rules)
 
     def rtp(self, avg_bet: float) -> float:
         if avg_bet == 0:
             return 1.0
         total_payout = sum(rule.payout for rule in self.current_game.pay_rules)
-        return round(self.prob_winning * total_payout / avg_bet, ROUNDING_PRECISION)
+        return round(
+            self.total_prob_winning * total_payout / avg_bet, ROUNDING_PRECISION
+        )
 
     @property
     def volatility(self) -> float:
@@ -251,7 +253,7 @@ if __name__ == "__main__":
     print(slot_machine.pull_lever())
     print(slot_machine.evaluate(slot_machine.pull_lever()))
     print("prob winning:", slot_machine.prob_winning)
-    print("hit rate:", slot_machine.hit_rate)
-    print("hit freq:", slot_machine.hit_frequency)
+    print("hit rate:", slot_machine.hit_rate(PayRule(3, 1000, Symbol("A"))))
+    print("hit freq:", slot_machine.hit_frequency(PayRule(3, 1000, Symbol("A"))))
     print("rtp(1):", slot_machine.rtp(1.0))
     print("volatility:", slot_machine.volatility)
