@@ -46,7 +46,7 @@ def test_reelstrip_initialization_and_spinning():
 def test_gamebase_initialization():
     game = GameBase(
         "Test Game",
-        [Payline([0, 1, 2])],
+        [Window(3, 3).tl_diag()],
         [PayRule(3, 100.0)],
         [Reelstrip([Symbol("A"), Symbol("B")], [1, 9]) for _ in range(3)],
     )
@@ -72,15 +72,15 @@ def test_machine_initialization():
 
 def test_machine_lever_pull():
     symbol_a = Symbol("A")
+    window = Window(1, 3)
     games = [
         GameBase(
             "Game1",
-            [Payline([0, 0, 0])],
+            [window.topline()],
             [PayRule(3, 1000, symbol_a)],
             [Reelstrip([symbol_a], [1]) for _ in range(3)],
         )
     ]
-    window = Window(1, 3)
     machine = Machine(games, window)
     result = machine.pull_lever()
     assert len(result) == 3
@@ -89,15 +89,15 @@ def test_machine_lever_pull():
 
 def test_machine_evaluate_win():
     symbol_a = Symbol("A")
+    window = Window(1, 3)
     games = [
         GameBase(
             "Game1",
-            [Payline([0, 0, 0])],
+            [window.topline()],
             [PayRule(3, 1000, symbol_a)],
             [Reelstrip([symbol_a], [1]) for _ in range(3)],
         )
     ]
-    window = Window(1, 3)
     machine = Machine(games, window)
     result = [[symbol_a] for _ in range(3)]
     winnings = machine.evaluate(result)
@@ -107,15 +107,15 @@ def test_machine_evaluate_win():
 def test_machine_no_win():
     symbol_a = Symbol("A")
     symbol_b = Symbol("B")
+    window = Window(1, 3)
     games = [
         GameBase(
             "Game1",
-            [Payline([0, 0, 0])],
+            [window.topline()],
             [PayRule(3, 1000, symbol_a)],
             [Reelstrip([symbol_a, symbol_b], [1, 1]) for _ in range(3)],
         )
     ]
-    window = Window(1, 3)
     machine = Machine(games, window)
     result = [[symbol_b], [symbol_b], [symbol_b]]
     winnings = machine.evaluate(result)
@@ -178,15 +178,15 @@ def test_validate_game_window_invalid_payline_index():
 def test_evaluate_multiple_paylines():
     symbol_a = Symbol("A")
     symbol_b = Symbol("B")
+    window = Window(3, 3)
     games = [
         GameBase(
             "Game1",
-            [Payline([0, 1, 2]), Payline([0, 0, 0])],
+            [window.tl_diag(), window.topline()],
             [PayRule(3, 1000, symbol_a), PayRule(3, 500, symbol_b)],
             [Reelstrip([symbol_a, symbol_b], [3, 3]) for _ in range(3)],
         )
     ]
-    window = Window(3, 3)
     machine = Machine(games, window)
     result = [
         [symbol_a, symbol_b, symbol_b],

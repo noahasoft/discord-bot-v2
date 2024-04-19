@@ -44,6 +44,22 @@ class Window:
     def __repr__(self) -> str:
         return f"Window({self.rows}, {self.cols})"
 
+    # Convenience methods for creating common paylines
+    def centerline(self) -> Payline:
+        return Payline([self.rows // 2] * self.cols)
+
+    def topline(self) -> Payline:
+        return Payline([0] * self.cols)
+
+    def bottomline(self) -> Payline:
+        return Payline([self.rows - 1] * self.cols)
+
+    def tl_diag(self) -> Payline:
+        return Payline([i for i in range(self.cols)])
+
+    def tr_diag(self) -> Payline:
+        return Payline([self.cols - i - 1 for i in range(self.cols)])
+
 
 class Reelstrip:
     def __init__(self, symbols: list[Symbol], counts: list[float]):
