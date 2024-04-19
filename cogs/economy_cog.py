@@ -53,7 +53,7 @@ class EconomyCog(commands.Cog):
     async def daily(self):
         for user_id in await self.get_registered_users():
             try:
-                await self.deposit_money(user_id, self.passive_value)
+                await self.deposit_money(user_id, self.passive_value, "daily deposit")
             except Exception as e:
                 print(f"Failed to deposit daily money for {user_id}: {str(e)}")
 
@@ -70,7 +70,7 @@ class EconomyCog(commands.Cog):
             )
             if member.voice and member.voice.channel is not None:
                 try:
-                    await self.deposit_money(member.id, self.passive_value)
+                    await self.deposit_money(member.id, self.passive_value, "passive income from voice channel")
                 except Exception as e:
                     print(f"Failed to deposit passive money for {member.id}: {str(e)}")
 
@@ -101,18 +101,18 @@ class EconomyCog(commands.Cog):
                 result = await cursor.fetchone()
                 return result[0] if result[0] is not None else 0
 
-    async def deposit_money(self, user_id: int, amount: int):
+    async def deposit_money(self, user_id: int, amount: int, description: str = "deposit"):
         async with aiosqlite.connect("economy.db") as db:
             await db.execute(
-                "INSERT INTO transactions (user_id, value, description) VALUES (?, ?, 'deposit')",
-                (user_id, amount),
+                "INSERT INTO transactions (user_id, value, description) VALUES (?, ?, ?)",
+                (user_id, amount, description),
             )
             await db.commit()
 
-    async def withdraw_money(self, user_id: int, amount: int):
+    async def withdraw_money(self, user_id: int, amount: int, description: str = "withdrawal"):
         async with aiosqlite.connect("economy.db") as db:
             await db.execute(
-                "INSERT INTO transactions (user_id, value, description) VALUES (?, ?, 'withdrawal')",
-                (user_id, -amount),
+                "INSERT INTO transactions (user_id, value, description) VALUES (?, ?, ?)",
+                (user_id, -amount, description),
             )
             await db.commit()

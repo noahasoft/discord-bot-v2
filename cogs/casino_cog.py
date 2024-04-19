@@ -65,12 +65,12 @@ class CasinoCog(commands.Cog):
             response += "\n"
 
         if winnings > 0:
-            await self.economy_cog.deposit_money(interaction.user.id, winnings)
+            await self.economy_cog.deposit_money(interaction.user.id, winnings, "slot winnings")
             await interaction.response.send_message(
                 f"{response}\nCongratulations! You won ${winnings:.2f}!"
             )
         else:
-            await self.economy_cog.withdraw_money(interaction.user.id, self.slot_cost)
+            await self.economy_cog.withdraw_money(interaction.user.id, self.slot_cost, "slot cost")
             await interaction.response.send_message(
                 f"{response}\nBetter luck next time! You lost ${self.slot_cost:.2f}."
             )
