@@ -63,13 +63,13 @@ class Window:
 
 class Reelstrip:
     def __init__(self, symbols: list[Symbol], counts: list[float]):
-        self.symbols = self.build_wheel(symbols, counts)
+        self.symbols = self._build_wheel(symbols, counts)
         self.counts = counts
 
     def __iter__(self):
         return zip(map(str, self.symbols), self.counts)
 
-    def build_wheel(self, symbols: list[Symbol], counts: list[float]) -> list[Symbol]:
+    def _build_wheel(self, symbols: list[Symbol], counts: list[float]) -> list[Symbol]:
         return sum(
             [[symbol] * int(count) for symbol, count in zip(symbols, counts)], []
         )

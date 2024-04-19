@@ -35,7 +35,7 @@ def test_reelstrip_initialization_and_spinning():
     symbols = [Symbol("A"), Symbol("B")]
     counts = [1, 3]
     reel = Reelstrip(symbols, counts)
-    assert len(reel.build_wheel(symbols, counts)) == 4  # Simple count check
+    assert len(reel._build_wheel(symbols, counts)) == 4  # Simple count check
 
     window = Window(1, 3)
     spin_result = reel.spin(window)
@@ -217,7 +217,7 @@ def test_build_wheel():
     symbols = [Symbol("A"), Symbol("B"), Symbol("C")]
     counts = [1, 2, 3]
     reel = Reelstrip(symbols, counts)
-    wheel = reel.build_wheel(symbols, counts)
+    wheel = reel._build_wheel(symbols, counts)
     assert len(wheel) == 6
     assert wheel.count(Symbol("A")) == 1
     assert wheel.count(Symbol("B")) == 2
