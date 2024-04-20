@@ -25,9 +25,9 @@ class CasinoCog(commands.Cog):
                     "g01",
                     [Payline([1, 1, 1])],
                     [
-                        PayRule(3, 200, symbols[0]),
-                        PayRule(3, 500, symbols[1]),
-                        PayRule(3, 1000, symbols[2]),
+                        PayRule([symbols[0]] * 3, 200),
+                        PayRule([symbols[1]] * 3, 500),
+                        PayRule([symbols[2]] * 3, 1000),
                     ],
                     [
                         Reelstrip(

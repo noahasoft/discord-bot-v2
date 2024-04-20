@@ -102,15 +102,12 @@ class Reelstrip:
 
 
 class PayRule:
-    def __init__(
-        self, num_symbols: int, payout: float, symbol: Optional[Symbol] = None
-    ):
-        self.num_symbols = num_symbols
+    def __init__(self, symbol_pattern: list[Symbol], payout: float):
+        self.symbol_pattern = symbol_pattern
         self.payout = payout
-        self.symbol = symbol
 
     def __repr__(self) -> str:
-        return f"PayRule({self.num_symbols}, {self.payout}, {self.symbol})"
+        return f"PayRule({self.symbol_pattern}, {self.payout})"
 
 
 class GameBase:
@@ -170,7 +167,7 @@ class Machine:
         symbol_a = Symbol("A")
         symbol_x = Symbol("X")
         paylines = [Payline([1, 1, 1])]
-        pay_rules = [PayRule(3, 1000, symbol_a)]
+        pay_rules = [PayRule([symbol_a] * 3, 1000)]
         reels = [Reelstrip([symbol_a, symbol_x], [1, 9]) for _ in range(3)]
         return cls([GameBase("g01", paylines, pay_rules, reels)], Window(3, 3))
 
@@ -187,7 +184,14 @@ class Machine:
         for payline in self.current_game.paylines:
             symbols = [result[wheel][idx] for wheel, idx in enumerate(payline.indices)]
             for pay_rule in self.current_game.pay_rules:
-                if symbols.count(pay_rule.symbol) == pay_rule.num_symbols:
+                if all(
+                    [
+                        symbol == pattern_symbol
+                        for symbol, pattern_symbol in zip(
+                            symbols, pay_rule.symbol_pattern
+                        )
+                    ]
+                ):
                     if best_payrule is None or pay_rule.payout > best_payrule.payout:
                         best_payrule = pay_rule
         return best_payrule.payout if best_payrule is not None else 0
@@ -207,11 +211,11 @@ class Machine:
         rv = prod(
             [
                 (
-                    reel.get_count(pay_rule.symbol) / sum(reel.counts)
-                    if pay_rule.symbol is not None
+                    reel.get_count(pay_rule.symbol_pattern[idx]) / sum(reel.counts)
+                    if pay_rule.symbol_pattern[idx] is not None
                     else sum(reel.counts) / len(reel.symbols)
                 )
-                for reel in self.current_game.reels
+                for idx, reel in enumerate(self.current_game.reels)
             ]
         )
         if rv == 0:
