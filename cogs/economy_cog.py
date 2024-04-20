@@ -70,7 +70,11 @@ class EconomyCog(commands.Cog):
             )
             if member.voice and member.voice.channel is not None:
                 try:
-                    await self.deposit_money(member.id, self.passive_value, "passive income from voice channel")
+                    await self.deposit_money(
+                        member.id,
+                        self.passive_value,
+                        "passive income from voice channel",
+                    )
                 except Exception as e:
                     print(f"Failed to deposit passive money for {member.id}: {str(e)}")
 
@@ -104,7 +108,9 @@ class EconomyCog(commands.Cog):
                 else:
                     return 0
 
-    async def deposit_money(self, user_id: int, amount: int, description: str = "deposit"):
+    async def deposit_money(
+        self, user_id: int, amount: int, description: str = "deposit"
+    ):
         async with aiosqlite.connect("economy.db") as db:
             await db.execute(
                 "INSERT INTO transactions (user_id, value, description) VALUES (?, ?, ?)",
@@ -112,7 +118,9 @@ class EconomyCog(commands.Cog):
             )
             await db.commit()
 
-    async def withdraw_money(self, user_id: int, amount: int, description: str = "withdrawal"):
+    async def withdraw_money(
+        self, user_id: int, amount: int, description: str = "withdrawal"
+    ):
         async with aiosqlite.connect("economy.db") as db:
             await db.execute(
                 "INSERT INTO transactions (user_id, value, description) VALUES (?, ?, ?)",
