@@ -40,7 +40,7 @@ class CasinoCog(commands.Cog):
             ],
             Window(3, 3),
         )
-        self.slot_cost = 10
+        self.slot_cost = 20
 
     @app_commands.command()
     async def slots(self, interaction: discord.Interaction):
