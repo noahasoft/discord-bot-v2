@@ -9,8 +9,8 @@ import aiosqlite
 class EconomyCog(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Client = bot
-        self.daily_value = 100
-        self.passive_value = 10
+        self.daily_value = 50
+        self.passive_value = 5
 
     async def cog_load(self) -> None:
         await self.create_economy_table()
