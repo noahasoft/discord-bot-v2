@@ -1,5 +1,6 @@
 import pytest
 from cogs.games.slots import (
+    AnyPayRule,
     AnySymbol,
     NotSymbol,
     PayRule,
@@ -576,3 +577,20 @@ def test_any_symbol_payrule(payrule_any_symbol, symbol_a, symbol_b):
     result = [[symbol_a], [symbol_a], [symbol_a]]
     winnings = machine.evaluate(result)
     assert winnings == 1000
+
+
+def test_anypayrule_generate_symbol_patterns(symbol_a, symbol_b, any_symbol):
+    symbol_pattern = [symbol_a, any_symbol, symbol_b]
+    any_payrule = AnyPayRule(symbol_pattern, 1000)
+    expected_symbol_patterns = [
+        [symbol_a, symbol_a, symbol_b],
+        [symbol_a, symbol_b, symbol_b],
+    ]
+    assert any_payrule.symbol_patterns == expected_symbol_patterns
+
+
+def test_anypayrule(symbol_a, symbol_b, any_symbol):
+    symbol_pattern = [symbol_a, any_symbol, symbol_b]
+    any_payrule = AnyPayRule(symbol_pattern, 1000)
+    assert repr(any_payrule) == "AnyPayRule([Symbol(A), AnySymbol(), Symbol(B)], 1000)"
+    assert len(any_payrule.symbol_patterns) == 2

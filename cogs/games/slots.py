@@ -4,7 +4,7 @@ from itertools import cycle
 from collections import Counter
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 import warnings
 
 ROUNDING_PRECISION = 6
@@ -145,6 +145,33 @@ class PayRule:
 
     def __repr__(self) -> str:
         return f"PayRule({self.symbol_pattern}, {self.payout})"
+
+
+class AnyPayRule:
+    def __init__(self, symbol_pattern: list[Union[Symbol, AnySymbol]], payout: float):
+        self.payout = payout
+        self._base_symbol_pattern = symbol_pattern
+        self._all_symbols = set(symbol_pattern) - {AnySymbol()}
+        self.symbol_patterns = self._generate_symbol_patterns(symbol_pattern)
+
+    def _generate_symbol_patterns(self, pattern: list[Union[Symbol, AnySymbol]], idx=0):
+        if idx == len(pattern):
+            return [pattern.copy()]  # Return a copy of the current pattern
+
+        current_symbol = pattern[idx]
+        if isinstance(current_symbol, AnySymbol):
+            combinations = []
+            # Iterate through all possible symbols to replace the 'Any' symbol
+            for symbol in self._all_symbols:
+                pattern[idx] = symbol
+                combinations.extend(self._generate_symbol_patterns(pattern, idx + 1))
+            pattern[idx] = current_symbol  # Restore original symbol after processing
+            return combinations
+        else:
+            return self._generate_symbol_patterns(pattern, idx + 1)
+
+    def __repr__(self) -> str:
+        return f"AnyPayRule({self._base_symbol_pattern}, {self.payout})"
 
 
 class GameBase:
