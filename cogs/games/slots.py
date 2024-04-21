@@ -24,6 +24,43 @@ class Symbol:
         return f"Symbol({self.name})"
 
 
+class AnySymbol(Symbol):
+    def __init__(self):
+        super().__init__("Any")
+
+    def __str__(self) -> str:
+        return "*"
+
+    def __repr__(self) -> str:
+        return "AnySymbol()"
+
+    def __eq__(self, other: Symbol) -> bool:
+        return True
+
+    def __hash__(self) -> int:
+        return hash("Any")
+
+    def __ne__(self, other: Symbol) -> bool:
+        return False
+
+
+class NotSymbol(Symbol):
+    def __str__(self) -> str:
+        return f"#{self.name}"
+
+    def __repr__(self) -> str:
+        return f"NotSymbol({self.name})"
+
+    def __eq__(self, other: Symbol) -> bool:
+        return self.name != other.name
+
+    def __hash__(self) -> int:
+        return hash(f"#{self.name}")
+
+    def __ne__(self, other: Symbol) -> bool:
+        return self.name == other.name
+
+
 class Payline:
     def __init__(self, indices: list[int]):
         self.indices = indices

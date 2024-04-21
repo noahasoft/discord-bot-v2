@@ -1,5 +1,7 @@
 import pytest
 from cogs.games.slots import (
+    AnySymbol,
+    NotSymbol,
     PayRule,
     Payline,
     GameBase,
@@ -21,6 +23,16 @@ def symbol_b():
 
 
 @pytest.fixture
+def any_symbol():
+    return AnySymbol()
+
+
+@pytest.fixture
+def not_symbol_a():
+    return NotSymbol("A")
+
+
+@pytest.fixture
 def basic_window():
     return Window(3, 3)
 
@@ -38,6 +50,16 @@ def basic_payrule(symbol_a):
 @pytest.fixture
 def basic_payrule_b(symbol_b):
     return PayRule([symbol_b] * 3, 500)
+
+
+@pytest.fixture
+def payrule_not_a(not_symbol_a):
+    return PayRule([not_symbol_a] * 3, 1000)
+
+
+@pytest.fixture
+def payrule_any_symbol(any_symbol):
+    return PayRule([any_symbol] * 3, 1000)
 
 
 @pytest.fixture
@@ -502,3 +524,55 @@ def test_machine_lever_pull_and_evaluate_win(basic_game, basic_window):
     result = machine.pull_lever()
     winnings = machine.evaluate(result)
     assert isinstance(result, list) and isinstance(winnings, (int, float))
+
+
+def test_not_symbol_str(symbol_a, not_symbol_a):
+    assert str(not_symbol_a) == "#A"
+    assert repr(not_symbol_a) == "NotSymbol(A)"
+    assert not_symbol_a != symbol_a
+
+
+def test_any_symbol(any_symbol, symbol_a, symbol_b):
+    assert str(any_symbol) == "*"
+    assert repr(any_symbol) == "AnySymbol()"
+    assert any_symbol == symbol_a
+    assert any_symbol == symbol_b
+    assert hash(any_symbol) == hash("Any")
+
+
+def test_not_payrule(payrule_not_a, symbol_a, symbol_b):
+    window = Window(1, 3)
+    games = [
+        GameBase(
+            "Game1",
+            [window.topline()],
+            [payrule_not_a],
+            [Reelstrip([symbol_a], [1]) for _ in range(3)],
+        ),
+    ]
+    machine = Machine(games, window)
+    result = [[symbol_b], [symbol_b], [symbol_b]]
+    winnings = machine.evaluate(result)
+    assert winnings == 1000
+    result = [[symbol_a], [symbol_a], [symbol_a]]
+    winnings = machine.evaluate(result)
+    assert winnings == 0
+
+
+def test_any_symbol_payrule(payrule_any_symbol, symbol_a, symbol_b):
+    window = Window(1, 3)
+    games = [
+        GameBase(
+            "Game1",
+            [window.topline()],
+            [payrule_any_symbol],
+            [Reelstrip([symbol_a], [1]) for _ in range(3)],
+        ),
+    ]
+    machine = Machine(games, window)
+    result = [[symbol_b], [symbol_b], [symbol_b]]
+    winnings = machine.evaluate(result)
+    assert winnings == 1000
+    result = [[symbol_a], [symbol_a], [symbol_a]]
+    winnings = machine.evaluate(result)
+    assert winnings == 1000
