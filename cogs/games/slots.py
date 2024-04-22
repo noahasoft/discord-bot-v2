@@ -208,7 +208,11 @@ class PayRule:
         self.payout = payout
 
     def __repr__(self) -> str:
-        return f"PayRule({self.symbol_pattern}, {self.payout})"
+        rule_string = f"[{', '.join(str(symbol) for symbol in self.symbol_pattern)}]"
+        return f"PayRule({rule_string}, {self.payout})"
+    
+    def __str__(self) -> str:
+        return self.__repr__()
 
 
 class AnyPayRule:
