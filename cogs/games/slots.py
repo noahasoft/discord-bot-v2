@@ -304,6 +304,8 @@ class Machine:
     """
 
     current_game_idx: int
+    games: list[GameBase]
+    window: Window
 
     def __init__(self, games: list[GameBase], window: Window):
         if not games:
@@ -316,78 +318,51 @@ class Machine:
 
     @staticmethod
     def validate_game_window(window: Window, game: GameBase) -> None:
-        """Ensure the game and window are compatible."""
         if len(game.reels) != window.cols:
-            raise ValueError(
-                f"Invalid number of reels: {len(game.reels)}."
-                " Must be equal to the number of columns in the window ({window.cols})."
-            )
+            raise ValueError("Invalid number of reels.")
         for payline in game.paylines:
-            for idx in payline.indices:
-                if idx >= window.rows:
-                    raise ValueError(
-                        f"Invalid payline index: {idx}. Must be less than the number of rows in"
-                        " the window ({window.rows})."
-                    )
+            if any(idx >= window.rows for idx in payline.indices):
+                raise ValueError("Invalid payline index.")
 
     @property
-    def current_game(self):
+    def current_game(self) -> GameBase:
         return self.games[self.current_game_idx]
 
     def pull_lever(self) -> list[list[Symbol]]:
         return [reel.spin(self.window) for reel in self.current_game.reels]
 
     def evaluate(self, result: list[list[Symbol]]) -> int:
-        """Evaluate the result and return the winnings based on paylines and scatter symbols."""
-        best_payrule: Optional[PayRule] = None
-        scatter_winnings = 0
+        payline_winnings = self.evaluate_payline_winnings(result)
+        scatter_winnings = self.evaluate_scatter_winnings(result)
+        return max(payline_winnings, scatter_winnings)
 
-        # Check for payline-based winnings
+    def evaluate_payline_winnings(self, result: list[list[Symbol]]) -> int:
+        best_payout = 0
         for payline in self.current_game.paylines:
-            payline_symbols = [
-                result[wheel][idx] for wheel, idx in enumerate(payline.indices)
-            ]
-            for pay_rule in self.current_game.pay_rules:
-                if isinstance(pay_rule, ScatterPayRule):
-                    continue  # Skip scatter pay rules in this loop
-                if all(
-                    symbol == pattern_symbol
-                    for symbol, pattern_symbol in zip(
-                        payline_symbols, pay_rule.symbol_pattern
-                    )
+            symbols = [result[wheel][idx] for wheel, idx in enumerate(payline.indices)]
+            for rule in self.current_game.pay_rules:
+                if not isinstance(rule, ScatterPayRule) and all(
+                    s == r for s, r in zip(symbols, rule.symbol_pattern)
                 ):
-                    if best_payrule is None or pay_rule.payout > best_payrule.payout:
-                        best_payrule = pay_rule
+                    best_payout = max(best_payout, rule.payout)
+        return best_payout
 
-        # Check for scatter symbols, ensuring each reel contributes only once
+    def evaluate_scatter_winnings(self, result: list[list[Symbol]]) -> int:
         scatter_counts = {}
         for reel in result:
-            seen_scatters_on_reel = set()
+            seen_scatters = set()
             for symbol in reel:
-                if symbol not in seen_scatters_on_reel:
-                    if symbol in scatter_counts:
-                        scatter_counts[symbol] += 1
-                    else:
-                        scatter_counts[symbol] = 1
-                    seen_scatters_on_reel.add(symbol)
+                if symbol not in seen_scatters:
+                    scatter_counts[symbol] = scatter_counts.get(symbol, 0) + 1
+                    seen_scatters.add(symbol)
 
-        best_scatter_payrule = None
-        for pay_rule in self.current_game.pay_rules:
-            if isinstance(pay_rule, ScatterPayRule):
-                scatter_count = scatter_counts.get(pay_rule.symbol_pattern[0], 0)
-                if scatter_count >= pay_rule.min_count:
-                    if (
-                        best_scatter_payrule is None
-                        or pay_rule.payout > best_scatter_payrule.payout
-                    ):
-                        best_scatter_payrule = pay_rule
-
-        scatter_winnings = (
-            best_scatter_payrule.payout if best_scatter_payrule is not None else 0
-        )
-        # Return the maximum of payline winnings or scatter winnings
-        payline_winnings = best_payrule.payout if best_payrule is not None else 0
-        return max(payline_winnings, scatter_winnings)
+        best_scatter_payout = 0
+        for rule in self.current_game.pay_rules:
+            if isinstance(rule, ScatterPayRule):
+                count = scatter_counts.get(rule.symbol_pattern[0], 0)
+                if count >= rule.min_count:
+                    best_scatter_payout = max(best_scatter_payout, rule.payout)
+        return best_scatter_payout
 
     @property
     def num_wheels(self) -> int:
