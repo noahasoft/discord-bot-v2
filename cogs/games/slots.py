@@ -12,6 +12,10 @@ ROUNDING_PRECISION = 6
 
 @dataclass
 class Symbol:
+    """
+    Base class for a symbol in the slot machine.
+    """
+
     name: str
 
     def __str__(self) -> str:
@@ -25,6 +29,10 @@ class Symbol:
 
 
 class AnySymbol(Symbol):
+    """
+    A symbol that can match any other symbol.
+    """
+
     def __init__(self):
         super().__init__("Any")
 
@@ -45,6 +53,10 @@ class AnySymbol(Symbol):
 
 
 class NotSymbol(Symbol):
+    """
+    A symbol that is not equal to the given symbol.
+    """
+
     def __str__(self) -> str:
         return f"#{self.name}"
 
@@ -61,7 +73,27 @@ class NotSymbol(Symbol):
         return self.name == other.name
 
 
+class ScatterSymbol(Symbol):
+    """
+    A scatter symbol is a special symbol that can appear anywhere on
+    the reels to trigger a win.
+    """
+
+    def __str__(self) -> str:
+        return f"{self.name}.s"
+
+    def __repr__(self) -> str:
+        return f"ScatterSymbol({self.name})"
+
+    def __hash__(self) -> int:
+        return hash(f"{self.name}.s")
+
+
 class Payline:
+    """
+    A payline is a sequence of indices that represent a winning combination.
+    """
+
     def __init__(self, indices: list[int]):
         self.indices = indices
 
@@ -76,6 +108,14 @@ class Payline:
 
 
 class Window:
+    """
+    A window represents the layout of the slot machine reels.
+    It is defined by the number of rows and columns.
+    A window can be used to create common paylines.
+    All paylines are zero-indexed.
+    Symbols that appear in a window are called "normal" symbols.
+    """
+
     def __init__(self, rows: int, cols: int) -> None:
         self.rows, self.cols = rows, cols
 
@@ -100,6 +140,12 @@ class Window:
 
 
 class Reelstrip:
+    """
+    A reelstrip is a list of symbols that can appear on a reel.
+    Each symbol has a corresponding count, which determines the probability
+    of the symbol appearing on the reel.
+    """
+
     def __init__(self, symbols: list[Symbol], counts: list[float]):
         self.symbols = self._build_wheel(symbols, counts)
         self.counts = counts
@@ -111,12 +157,13 @@ class Reelstrip:
             yield str(symbol), count[symbol]
 
     def _build_wheel(self, symbols: list[Symbol], counts: list[float]) -> list[Symbol]:
+        """Build the wheel based on the symbols and counts."""
         return sum(
             [[symbol] * int(count) for symbol, count in zip(symbols, counts)], []
         )
 
     def spin(self, window: Window) -> list[Symbol]:
-        """Spin the wheel and return the result."""
+        """Spin the reelstrip and return a window of symbols"""
         num_symbols_to_return = window.rows
         # return a window of symbols, keeping adjacent symbols in the same row
         center = random.randint(0, len(self.symbols) - 1)
@@ -139,6 +186,12 @@ class Reelstrip:
 
 
 class PayRule:
+    """
+    A pay rule defines a winning combination of symbols and the payout.
+    Special symbols such as NotSymbol and AnySymbol can be used to define
+    more complex pay rules.
+    """
+
     def __init__(self, symbol_pattern: list[Symbol], payout: float):
         self.symbol_pattern = symbol_pattern
         self.payout = payout
@@ -148,13 +201,20 @@ class PayRule:
 
 
 class AnyPayRule:
+    """
+    An 'Any' pay rule defines a special winning combination of symbols
+    that can match any other symbol.
+    """
+
     def __init__(self, symbol_pattern: list[Union[Symbol, AnySymbol]], payout: float):
         self.payout = payout
         self._base_symbol_pattern = symbol_pattern
         self._all_symbols = set(symbol_pattern) - {AnySymbol()}
         self.symbol_patterns = self._generate_symbol_patterns(symbol_pattern)
 
-    def _generate_symbol_patterns(self, pattern: list[Union[Symbol, AnySymbol]], idx=0):
+    def _generate_symbol_patterns(
+        self, pattern: list[Union[Symbol, AnySymbol]], idx: int = 0
+    ):
         if idx == len(pattern):
             return [pattern.copy()]  # Return a copy of the current pattern
 
@@ -175,7 +235,9 @@ class AnyPayRule:
 
 
 class GameBase:
-    """Define a 'base' game for the slot machine."""
+    """
+    Define a 'base' game for the slot machine.
+    """
 
     name: str
     paylines: list[Payline]
@@ -199,6 +261,12 @@ class GameBase:
 
 
 class Machine:
+    """
+    A slot machine that can play multiple games. This is also the
+    main class that manages the slot machine, including pulling the lever,
+    evaluating the result, and calculating the probability of winning.
+    """
+
     current_game_idx: int
 
     def __init__(self, games: list[GameBase], window: Window):
