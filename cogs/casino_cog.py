@@ -78,3 +78,17 @@ class CasinoCog(commands.Cog):
             await interaction.response.send_message(
                 f"{response}\nBetter luck next time! You lost ${self.slot_cost:.2f}."
             )
+
+    @app_commands.command()
+    async def show_payrules(self, interaction: discord.Interaction):
+        """Show the pay rules for the slot machine."""
+        response = f"**Cost per play**: ${self.slot_cost:.2f}\n\n"
+        response += "**Pay Rules**:\n"
+        for game in self.slot_machine.games:
+            response += f"*Game {game.name}*\n"
+            for rule in game.pay_rules:
+                response += f"{''.join(list(map(str, rule.symbol_pattern)))} --- ${rule.payout}\n"
+            response += "\n**Paylines (Zero indexed)**:\n"
+            for line in game.paylines:
+                response += f"{''.join(list(map(str, line.indices)))}\n"
+        await interaction.response.send_message(response)

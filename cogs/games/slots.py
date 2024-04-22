@@ -369,10 +369,9 @@ class Machine:
         return len(self.current_game.reels)
 
     def is_on_scoreline(self, wheel_idx: int, row: int) -> bool:
-        for payline in self.current_game.paylines:
-            if row == payline.indices[wheel_idx]:
-                return True
-        return False
+        return any(
+            row == payline.indices[wheel_idx] for payline in self.current_game.paylines
+        )
 
     def prob_winning(self, pay_rule: PayRule) -> float:
         """Calculate the probability of winning [0., 1.]"""
