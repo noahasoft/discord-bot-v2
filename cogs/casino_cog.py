@@ -90,5 +90,5 @@ class CasinoCog(commands.Cog):
                 response += f"{''.join(list(map(str, rule.symbol_pattern)))} --- ${rule.payout}\n"
             response += "\n**Paylines (Zero indexed)**:\n"
             for line in game.paylines:
-                response += f"{''.join(list(map(str, line.indices)))}\n"
+                response += f"{'-'.join(list(map(str, line.indices)))}\n"
         await interaction.response.send_message(response)

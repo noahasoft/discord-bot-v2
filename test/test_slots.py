@@ -634,9 +634,9 @@ def test_run_scatter_payrule(symbol_a, symbol_b, payrule_scatter_symbol, basic_w
     ]
     machine = Machine(games, basic_window)
     result = [
-        [symbol_a, symbol_a, symbol_a],
-        [symbol_a, symbol_b, symbol_a],
-        [symbol_a, symbol_a, symbol_a],
+        [symbol_b, symbol_a, symbol_b],
+        [symbol_a, symbol_b, symbol_b],
+        [symbol_b, symbol_b, symbol_a],
     ]
     winnings = machine.evaluate(result)
     assert winnings == 1000

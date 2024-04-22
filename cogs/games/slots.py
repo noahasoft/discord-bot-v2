@@ -4,7 +4,6 @@ from itertools import cycle
 from collections import Counter
 
 from dataclasses import dataclass
-from typing import Optional, Union
 import warnings
 
 ROUNDING_PRECISION = 6
@@ -224,14 +223,14 @@ class AnyPayRule:
     that can match any other symbol.
     """
 
-    def __init__(self, symbol_pattern: list[Union[Symbol, AnySymbol]], payout: float):
+    def __init__(self, symbol_pattern: list[Symbol], payout: float):
         self.payout = payout
         self._base_symbol_pattern = symbol_pattern
         self._all_symbols = set(symbol_pattern) - {AnySymbol()}
         self.symbol_patterns = self._generate_symbol_patterns(symbol_pattern)
 
     def _generate_symbol_patterns(
-        self, pattern: list[Union[Symbol, AnySymbol]], idx: int = 0
+        self, pattern: list[Symbol], idx: int = 0
     ):
         if idx == len(pattern):
             return [pattern.copy()]  # Return a copy of the current pattern
