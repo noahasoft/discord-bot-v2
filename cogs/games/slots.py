@@ -159,21 +159,28 @@ class Reelstrip:
     of the symbol appearing on the reel.
     """
 
-    def __init__(self, symbols: list[Symbol], counts: list[float]):
-        self.symbols = self._build_wheel(symbols, counts)
+    def __init__(
+        self, symbols: list[Symbol], counts: list[float], shuffle: bool = True
+    ):
+        self.symbols = self._build_wheel(symbols, counts, shuffle)
         self.counts = counts
 
     def __iter__(self):
         count = {}
-        for symbol in self.symbols:
+        for symbol in sorted(self.symbols, key=lambda x: x.name):
             count[symbol] = count.get(symbol, 0) + 1
             yield str(symbol), count[symbol]
 
-    def _build_wheel(self, symbols: list[Symbol], counts: list[float]) -> list[Symbol]:
+    def _build_wheel(
+        self, symbols: list[Symbol], counts: list[float], shuffle: bool = True
+    ) -> list[Symbol]:
         """Build the wheel based on the symbols and counts."""
-        return sum(
+        symbols = sum(
             [[symbol] * int(count) for symbol, count in zip(symbols, counts)], []
         )
+        if shuffle:
+            random.shuffle(symbols)
+        return symbols
 
     def spin(self, window: Window) -> list[Symbol]:
         """Spin the reelstrip and return a window of symbols"""
@@ -229,9 +236,7 @@ class AnyPayRule:
         self._all_symbols = set(symbol_pattern) - {AnySymbol()}
         self.symbol_patterns = self._generate_symbol_patterns(symbol_pattern)
 
-    def _generate_symbol_patterns(
-        self, pattern: list[Symbol], idx: int = 0
-    ):
+    def _generate_symbol_patterns(self, pattern: list[Symbol], idx: int = 0):
         if idx == len(pattern):
             return [pattern.copy()]  # Return a copy of the current pattern
 
