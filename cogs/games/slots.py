@@ -379,19 +379,22 @@ class Machine:
 
     def prob_winning(self, pay_rule: PayRule) -> float:
         """Calculate the probability of winning [0., 1.]"""
-        rv = prod(
-            [
-                (
-                    reel.get_count(pay_rule.symbol_pattern[idx]) / sum(reel.counts)
-                    if pay_rule.symbol_pattern[idx] is not None
-                    else sum(reel.counts) / len(reel.symbols)
-                )
-                for idx, reel in enumerate(self.current_game.reels)
-            ]
+        rv = round(
+            prod(
+                [
+                    (
+                        reel.get_count(pay_rule.symbol_pattern[idx]) / sum(reel.counts)
+                        if pay_rule.symbol_pattern[idx] is not None
+                        else sum(reel.counts) / len(reel.symbols)
+                    )
+                    for idx, reel in enumerate(self.current_game.reels)
+                ]
+            ),
+            ROUNDING_PRECISION,
         )
         if rv == 0:
             warnings.warn("The probability of winning is zero. Check the pay rules.")
-        return round(rv, ROUNDING_PRECISION)
+        return rv
 
     def hit_rate(self, pay_rule: PayRule) -> float:
         """Calculate the hit rate of the slot machine. [0., inf]"""
