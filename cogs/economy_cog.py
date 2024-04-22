@@ -17,12 +17,7 @@ class EconomyCog(commands.Cog):
         await self.sync_members()
         self.daily.start()
         self.passive_income.start()
-        self.scheduled_sync.start()
         await super().cog_load()
-
-    async def sync_members(self):
-        for user in self.bot.get_all_members():
-            await self.create_if_not_exists(user.id)
 
     async def cog_unload(self) -> None:
         self.daily.stop()
@@ -35,7 +30,7 @@ class EconomyCog(commands.Cog):
         """Prints the user's balance."""
         balance = await self.get_balance(interaction.user.id)
         await interaction.response.send_message(
-            f"Balance: {balance:.2f}", ephemeral=True
+            f"Balance: ${balance:.2f}", ephemeral=True
         )
 
     @app_commands.command()
@@ -58,10 +53,6 @@ class EconomyCog(commands.Cog):
                 await self.deposit_money(user_id, self.passive_value, "daily deposit")
             except Exception as e:
                 print(f"Failed to deposit daily money for {user_id}: {str(e)}")
-
-    @tasks.loop(minutes=15)
-    async def scheduled_sync(self):
-        await self.sync_members()
 
     @tasks.loop(minutes=10)
     async def passive_income(self):
