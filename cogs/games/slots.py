@@ -27,6 +27,9 @@ class Symbol:
     def __repr__(self) -> str:
         return f"Symbol({self.name})"
 
+    def __eq__(self, other: "Symbol") -> bool:
+        return self.name == other.name
+
 
 class AnySymbol(Symbol):
     """
@@ -94,7 +97,7 @@ class ScatterSymbol(Symbol):
         return f"ScatterSymbol({self.name})"
 
     def __hash__(self) -> int:
-        return hash(f"{self.name}.s")
+        return super().__hash__()
 
     def __eq__(self, other: Symbol) -> bool:
         return self.name == other.name
@@ -210,7 +213,7 @@ class PayRule:
     def __repr__(self) -> str:
         rule_string = f"[{', '.join(str(symbol) for symbol in self.symbol_pattern)}]"
         return f"PayRule({rule_string}, {self.payout})"
-    
+
     def __str__(self) -> str:
         return self.__repr__()
 
@@ -255,7 +258,16 @@ class ScatterPayRule(PayRule):
         self.min_count = min_count
 
     def __repr__(self) -> str:
-        return f"ScatterPayRule({self.symbol_pattern[0]}, min_count={self.min_count}, payout={self.payout})"
+        symbol_str = (
+            "[" + ", ".join(symbol.__repr__() for symbol in self.symbol_pattern) + "]"
+        )
+        return f"ScatterPayRule({symbol_str}, min_count={self.min_count}, payout={self.payout})"
+
+    def __str__(self) -> str:
+        symbol_str = (
+            "[" + ", ".join(str(symbol) for symbol in self.symbol_pattern) + "]"
+        )
+        return f"ScatterPayRule({symbol_str}, min_count={self.min_count}, payout={self.payout})"
 
 
 class GameBase:
@@ -347,14 +359,32 @@ class Machine:
                     if best_payrule is None or pay_rule.payout > best_payrule.payout:
                         best_payrule = pay_rule
 
-        # Check for scatter symbols across the entire result window
-        result_flat = [symbol for column in result for symbol in column]
+        # Check for scatter symbols, ensuring each reel contributes only once
+        scatter_counts = {}
+        for reel in result:
+            seen_scatters_on_reel = set()
+            for symbol in reel:
+                if symbol not in seen_scatters_on_reel:
+                    if symbol in scatter_counts:
+                        scatter_counts[symbol] += 1
+                    else:
+                        scatter_counts[symbol] = 1
+                    seen_scatters_on_reel.add(symbol)
+
+        best_scatter_payrule = None
         for pay_rule in self.current_game.pay_rules:
             if isinstance(pay_rule, ScatterPayRule):
-                scatter_count = result_flat.count(pay_rule.symbol_pattern[0])
+                scatter_count = scatter_counts.get(pay_rule.symbol_pattern[0], 0)
                 if scatter_count >= pay_rule.min_count:
-                    scatter_winnings += pay_rule.payout
+                    if (
+                        best_scatter_payrule is None
+                        or pay_rule.payout > best_scatter_payrule.payout
+                    ):
+                        best_scatter_payrule = pay_rule
 
+        scatter_winnings = (
+            best_scatter_payrule.payout if best_scatter_payrule is not None else 0
+        )
         # Return the maximum of payline winnings or scatter winnings
         payline_winnings = best_payrule.payout if best_payrule is not None else 0
         return max(payline_winnings, scatter_winnings)
