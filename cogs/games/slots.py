@@ -314,15 +314,6 @@ class Machine:
                         " the window ({window.rows})."
                     )
 
-    @classmethod
-    def default(cls) -> "Machine":
-        symbol_a = Symbol("A")
-        symbol_x = Symbol("X")
-        paylines = [Payline([1, 1, 1])]
-        pay_rules = [PayRule([symbol_a] * 3, 1000)]
-        reels = [Reelstrip([symbol_a, symbol_x], [1, 9]) for _ in range(3)]
-        return cls([GameBase("g01", paylines, pay_rules, reels)], Window(3, 3))
-
     @property
     def current_game(self):
         return self.games[self.current_game_idx]
