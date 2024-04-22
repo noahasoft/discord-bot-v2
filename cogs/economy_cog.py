@@ -22,7 +22,6 @@ class EconomyCog(commands.Cog):
     async def cog_unload(self) -> None:
         self.daily.stop()
         self.passive_income.stop()
-        self.scheduled_sync.stop()
         await super().cog_unload()
 
     @app_commands.command()
