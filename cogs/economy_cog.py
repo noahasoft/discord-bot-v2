@@ -14,7 +14,6 @@ class EconomyCog(commands.Cog):
 
     async def cog_load(self) -> None:
         await self.create_economy_table()
-        await self.sync_members()
         self.daily.start()
         self.passive_income.start()
         await super().cog_load()
