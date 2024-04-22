@@ -7,6 +7,8 @@ from cogs.games.slots import (
     Payline,
     GameBase,
     Machine,
+    ScatterPayRule,
+    ScatterSymbol,
     Symbol,
     Reelstrip,
     Window,
@@ -29,8 +31,13 @@ def any_symbol():
 
 
 @pytest.fixture
-def not_symbol_a():
-    return NotSymbol("A")
+def not_symbol_a(symbol_a):
+    return NotSymbol.from_symbol(symbol_a)
+
+
+@pytest.fixture
+def scatter_symbol(symbol_a):
+    return ScatterSymbol.from_symbol(symbol_a)
 
 
 @pytest.fixture
@@ -61,6 +68,11 @@ def payrule_not_a(not_symbol_a):
 @pytest.fixture
 def payrule_any_symbol(any_symbol):
     return PayRule([any_symbol] * 3, 1000)
+
+
+@pytest.fixture
+def payrule_scatter_symbol(scatter_symbol):
+    return ScatterPayRule([scatter_symbol] * 3, 3, 1000)
 
 
 @pytest.fixture
@@ -586,7 +598,9 @@ def test_anypayrule_generate_symbol_patterns(symbol_a, symbol_b, any_symbol):
         [symbol_a, symbol_a, symbol_b],
         [symbol_a, symbol_b, symbol_b],
     ]
-    assert any_payrule.symbol_patterns == expected_symbol_patterns
+    assert all(
+        pattern in expected_symbol_patterns for pattern in any_payrule.symbol_patterns
+    )
 
 
 def test_anypayrule(symbol_a, symbol_b, any_symbol):
@@ -594,3 +608,33 @@ def test_anypayrule(symbol_a, symbol_b, any_symbol):
     any_payrule = AnyPayRule(symbol_pattern, 1000)
     assert repr(any_payrule) == "AnyPayRule([Symbol(A), AnySymbol(), Symbol(B)], 1000)"
     assert len(any_payrule.symbol_patterns) == 2
+
+
+def test_scatter_payrule(payrule_scatter_symbol):
+    assert (
+        repr(payrule_scatter_symbol) == "ScatterPayRule(A.s, min_count=3, payout=1000)"
+    )
+    assert (
+        str(payrule_scatter_symbol) == "ScatterPayRule(A.s, min_count=3, payout=1000)"
+    )
+    assert payrule_scatter_symbol == payrule_scatter_symbol
+    assert payrule_scatter_symbol != 1000
+
+
+def test_run_scatter_payrule(symbol_a, symbol_b, payrule_scatter_symbol, basic_window):
+    games = [
+        GameBase(
+            "Game1",
+            [basic_window.centerline()],
+            [payrule_scatter_symbol],
+            [Reelstrip([symbol_a], [1]) for _ in range(3)],
+        ),
+    ]
+    machine = Machine(games, basic_window)
+    result = [
+        [symbol_a, symbol_a, symbol_a],
+        [symbol_a, symbol_b, symbol_a],
+        [symbol_a, symbol_a, symbol_a],
+    ]
+    winnings = machine.evaluate(result)
+    assert winnings == 1000

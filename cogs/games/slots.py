@@ -57,6 +57,10 @@ class NotSymbol(Symbol):
     A symbol that is not equal to the given symbol.
     """
 
+    @classmethod
+    def from_symbol(cls, symbol: Symbol) -> "NotSymbol":
+        return cls(symbol.name)
+
     def __str__(self) -> str:
         return f"#{self.name}"
 
@@ -79,6 +83,10 @@ class ScatterSymbol(Symbol):
     the reels to trigger a win.
     """
 
+    @classmethod
+    def from_symbol(cls, symbol: Symbol) -> "ScatterSymbol":
+        return cls(symbol.name)
+
     def __str__(self) -> str:
         return f"{self.name}.s"
 
@@ -87,6 +95,9 @@ class ScatterSymbol(Symbol):
 
     def __hash__(self) -> int:
         return hash(f"{self.name}.s")
+
+    def __eq__(self, other: Symbol) -> bool:
+        return self.name == other.name
 
 
 class Payline:
@@ -234,6 +245,15 @@ class AnyPayRule:
         return f"AnyPayRule({self._base_symbol_pattern}, {self.payout})"
 
 
+class ScatterPayRule(PayRule):
+    def __init__(self, symbol_pattern: list[Symbol], min_count: int, payout: float):
+        super().__init__(symbol_pattern, payout)
+        self.min_count = min_count
+
+    def __repr__(self) -> str:
+        return f"ScatterPayRule({self.symbol_pattern[0]}, min_count={self.min_count}, payout={self.payout})"
+
+
 class GameBase:
     """
     Define a 'base' game for the slot machine.
@@ -311,22 +331,38 @@ class Machine:
         return [reel.spin(self.window) for reel in self.current_game.reels]
 
     def evaluate(self, result: list[list[Symbol]]) -> int:
-        """Evaluate the result and return the winnings."""
+        """Evaluate the result and return the winnings based on paylines and scatter symbols."""
         best_payrule: Optional[PayRule] = None
+        scatter_winnings = 0
+
+        # Check for payline-based winnings
         for payline in self.current_game.paylines:
-            symbols = [result[wheel][idx] for wheel, idx in enumerate(payline.indices)]
+            payline_symbols = [
+                result[wheel][idx] for wheel, idx in enumerate(payline.indices)
+            ]
             for pay_rule in self.current_game.pay_rules:
+                if isinstance(pay_rule, ScatterPayRule):
+                    continue  # Skip scatter pay rules in this loop
                 if all(
-                    [
-                        symbol == pattern_symbol
-                        for symbol, pattern_symbol in zip(
-                            symbols, pay_rule.symbol_pattern
-                        )
-                    ]
+                    symbol == pattern_symbol
+                    for symbol, pattern_symbol in zip(
+                        payline_symbols, pay_rule.symbol_pattern
+                    )
                 ):
                     if best_payrule is None or pay_rule.payout > best_payrule.payout:
                         best_payrule = pay_rule
-        return best_payrule.payout if best_payrule is not None else 0
+
+        # Check for scatter symbols across the entire result window
+        result_flat = [symbol for column in result for symbol in column]
+        for pay_rule in self.current_game.pay_rules:
+            if isinstance(pay_rule, ScatterPayRule):
+                scatter_count = result_flat.count(pay_rule.symbol_pattern[0])
+                if scatter_count >= pay_rule.min_count:
+                    scatter_winnings += pay_rule.payout
+
+        # Return the maximum of payline winnings or scatter winnings
+        payline_winnings = best_payrule.payout if best_payrule is not None else 0
+        return max(payline_winnings, scatter_winnings)
 
     @property
     def num_wheels(self) -> int:
