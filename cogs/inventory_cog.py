@@ -104,13 +104,13 @@ class InventoryCog(commands.Cog):
         response = "Your Inventory:\n"
         for item_name, quantity in inventory:
             response += f"{item_name}: {quantity}\n"
-        await interaction.response.send_message(response)
+        await interaction.response.send_message(response, ephemeral=True)
 
     @app_commands.command()
     async def buy_item(self, interaction: discord.Interaction, item_id: int):
         user_id = interaction.user.id
         response = await self.purchase_item(user_id, item_id)
-        await interaction.response.send_message(response)
+        await interaction.response.send_message(response, ephemeral=True)
 
     @app_commands.command()
     async def list_shop(self, interaction: discord.Interaction):
@@ -123,4 +123,4 @@ class InventoryCog(commands.Cog):
                     response += (
                         f"{item_id}: {name} - ${cost} ({properties}) [{description}]\n"
                     )
-        await interaction.response.send_message(response)
+        await interaction.response.send_message(response, ephemeral=True)

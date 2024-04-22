@@ -20,5 +20,7 @@ class UtilitiesCog(commands.Cog):
             )
             return
 
-        await interaction.response.send_message("Bot restarting, please wait.")
+        await interaction.response.send_message(
+            "Bot restarting, please wait.", ephemeral=True
+        )
         await self.bot.close()

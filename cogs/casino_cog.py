@@ -87,7 +87,7 @@ class CasinoCog(commands.Cog):
         for game in self.slot_machine.games:
             response += f"*Game {game.name}*\n"
             for rule in game.pay_rules:
-                response += f"{''.join(list(map(str, rule.symbol_pattern)))} --- ${rule.payout}\n"
+                response += f"{''.join(list(map(str, rule.symbol_pattern)))} --- ${rule.payout:.2f}\n"
             response += "\n**Paylines (Zero indexed)**:\n"
             for line in game.paylines:
                 response += f"{'-'.join(list(map(str, line.indices)))}\n"

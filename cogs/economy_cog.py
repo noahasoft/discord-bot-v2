@@ -34,7 +34,9 @@ class EconomyCog(commands.Cog):
     async def balance(self, interaction: discord.Interaction):
         """Prints the user's balance."""
         balance = await self.get_balance(interaction.user.id)
-        await interaction.response.send_message(f"Balance: {balance}")
+        await interaction.response.send_message(
+            f"Balance: {balance:.2f}", ephemeral=True
+        )
 
     @app_commands.command()
     async def leaderboard(self, interaction: discord.Interaction):
@@ -47,7 +49,7 @@ class EconomyCog(commands.Cog):
                 for row in await cursor.fetchall():
                     user = self.bot.get_user(row[0])
                     response += f"`{user.name}`: ${row[1]:.2f}\n"
-                await interaction.response.send_message(response)
+                await interaction.response.send_message(response, ephemeral=True)
 
     @tasks.loop(time=datetime.time(hour=8, tzinfo=datetime.timezone.utc))
     async def daily(self):

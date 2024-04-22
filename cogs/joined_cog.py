@@ -26,7 +26,8 @@ class JoinedCog(commands.Cog):
 
         # The format_dt function formats the date time into a human readable representation in the official client
         await interaction.response.send_message(
-            f"{member} joined {discord.utils.format_dt(member.joined_at)}"
+            f"{member} joined {discord.utils.format_dt(member.joined_at)}",
+            ephemeral=True,
         )
 
     async def show_join_date(
