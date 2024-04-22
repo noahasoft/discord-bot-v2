@@ -19,26 +19,21 @@ class CasinoCog(commands.Cog):
         self.bot: discord.Client = bot
         self.economy_cog = self.bot.get_cog("EconomyCog")
         symbols = [Symbol(":apple:"), Symbol(":banana:"), Symbol(":cherries:")]
+        counts = [6, 4, 2]
+        prizes = [200, 500, 1000]
+        window = Window(3, 3)
+        paylines = [window.centerline()]
+        pay_rules = [PayRule([sym] * 3, p) for sym, p in zip(symbols, prizes)]
         self.slot_machine = Machine(
             [
                 GameBase(
                     "g01",
-                    [Payline([1, 1, 1])],
-                    [
-                        PayRule([symbols[0]] * 3, 200),
-                        PayRule([symbols[1]] * 3, 500),
-                        PayRule([symbols[2]] * 3, 1000),
-                    ],
-                    [
-                        Reelstrip(
-                            symbols,
-                            [6, 4, 2],
-                        )
-                        for _ in range(3)
-                    ],
+                    paylines,
+                    pay_rules,
+                    [Reelstrip(symbols, counts) for _ in range(3)],
                 )
             ],
-            Window(3, 3),
+            window,
         )
         self.slot_cost = 20
 
