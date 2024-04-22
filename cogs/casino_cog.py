@@ -4,7 +4,6 @@ from discord.ext import commands
 
 from cogs.games.slots import (
     PayRule,
-    Payline,
     GameBase,
     Machine,
     Symbol,
@@ -18,19 +17,22 @@ class CasinoCog(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.economy_cog = self.bot.get_cog("EconomyCog")
+        num_reels = 3
         symbols = [Symbol(":apple:"), Symbol(":banana:"), Symbol(":cherries:")]
         counts = [6, 4, 2]
-        prizes = [200, 500, 1000]
-        window = Window(3, 3)
+        payouts = [200, 500, 1000]
+        window = Window(3, num_reels)
         paylines = [window.centerline()]
-        pay_rules = [PayRule([sym] * 3, p) for sym, p in zip(symbols, prizes)]
+        pay_rules = [
+            PayRule([sym] * num_reels, pay) for sym, pay in zip(symbols, payouts)
+        ]
         self.slot_machine = Machine(
             [
                 GameBase(
-                    "g01",
+                    "Default",
                     paylines,
                     pay_rules,
-                    [Reelstrip(symbols, counts) for _ in range(3)],
+                    [Reelstrip(symbols, counts) for _ in range(num_reels)],
                 )
             ],
             window,
@@ -39,7 +41,7 @@ class CasinoCog(commands.Cog):
 
     @app_commands.command()
     async def slots(self, interaction: discord.Interaction):
-        """Play the slots with the specified bet."""
+        """Play the slots."""
         balance = await self.economy_cog.get_balance(interaction.user.id)
         if balance < self.slot_cost:
             await interaction.response.send_message("Insufficient balance.")
@@ -54,7 +56,7 @@ class CasinoCog(commands.Cog):
                     response += "**" + wheel[row].name + "** "
                 else:
                     response += wheel[row].name + " "
-            # Only supports linear paylines for now
+            # Can only signify linear paylines for now
             if self.slot_machine.is_on_scoreline(0, row):
                 response += " <<<"
             response += "\n"
@@ -75,8 +77,8 @@ class CasinoCog(commands.Cog):
             )
 
     @app_commands.command()
-    async def show_payrules(self, interaction: discord.Interaction):
-        """Show the pay rules for the slot machine."""
+    async def show_rules(self, interaction: discord.Interaction):
+        """Show the rules and payouts for the slot machine."""
         response = f"**Cost per play**: ${self.slot_cost:.2f}\n\n"
         response += "**Pay Rules**:\n"
         for game in self.slot_machine.games:
@@ -86,4 +88,4 @@ class CasinoCog(commands.Cog):
             response += "\n**Paylines (Zero indexed)**:\n"
             for line in game.paylines:
                 response += f"{'-'.join(list(map(str, line.indices)))}\n"
-        await interaction.response.send_message(response)
+        await interaction.response.send_message(response, ephemeral=True)
