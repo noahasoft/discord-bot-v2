@@ -14,8 +14,8 @@ from cogs.games.slots import (
 
 @app_commands.guild_only()
 class CasinoCog(commands.Cog):
-    def __init__(self, bot):
-        self.bot: discord.Client = bot
+    def __init__(self, bot) -> None:
+        self.bot: commands.Bot = bot
         self.economy_cog = self.bot.get_cog("EconomyCog")
         num_reels = 3
         symbols = [Symbol(":apple:"), Symbol(":banana:"), Symbol(":cherries:")]

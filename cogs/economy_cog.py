@@ -7,8 +7,8 @@ import aiosqlite
 
 @app_commands.guild_only()
 class EconomyCog(commands.Cog):
-    def __init__(self, bot):
-        self.bot: discord.Client = bot
+    def __init__(self, bot) -> None:
+        self.bot: commands.Bot = bot
         self.daily_value = 50
         self.passive_value = 5
 
@@ -41,7 +41,9 @@ class EconomyCog(commands.Cog):
                 response = "Leaderboard:\n----------------\n"
                 for row in await cursor.fetchall():
                     user = self.bot.get_user(row[0])
-                    response += f"`{user.name}`: ${row[1]:.2f}\n"
+                    response += (
+                        f"`{user.name if user else str(row[0])}`: ${row[1]:.2f}\n"
+                    )
                 await interaction.response.send_message(response, ephemeral=True)
 
     @tasks.loop(time=datetime.time(hour=8, tzinfo=datetime.timezone.utc))

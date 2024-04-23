@@ -52,7 +52,10 @@ class WhitelistCog(commands.Cog):
 
         whitelist_ids = await self.get_whitelist()
         whitelist = [
-            f"`{self.bot.get_user(user_id[0]).name}`" for user_id in whitelist_ids
+            f"`{user.name}`"
+            if (user := self.bot.get_user(user_id[0])) is not None
+            else "Unknown User"
+            for user_id in whitelist_ids
         ]
         repsonse = "Whitelist:\n----------------\n" + "\n".join(whitelist)
         await interaction.response.send_message(repsonse)
@@ -89,4 +92,4 @@ class WhitelistCog(commands.Cog):
         async with aiosqlite.connect("whitelist.db") as db:
             cursor = await db.execute("SELECT user_id FROM whitelist")
             result = await cursor.fetchall()
-            return result
+            return list(result)

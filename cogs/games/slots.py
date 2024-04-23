@@ -4,6 +4,7 @@ from itertools import cycle
 from collections import Counter
 
 from dataclasses import dataclass
+from typing import Any
 import warnings
 
 ROUNDING_PRECISION = 6
@@ -26,7 +27,9 @@ class Symbol:
     def __repr__(self) -> str:
         return f"Symbol({self.name})"
 
-    def __eq__(self, other: "Symbol") -> bool:
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Symbol):
+            return False
         return self.name == other.name
 
 
@@ -44,13 +47,13 @@ class AnySymbol(Symbol):
     def __repr__(self) -> str:
         return "AnySymbol()"
 
-    def __eq__(self, other: Symbol) -> bool:
+    def __eq__(self, _: Any) -> bool:
         return True
 
     def __hash__(self) -> int:
         return hash("Any")
 
-    def __ne__(self, other: Symbol) -> bool:
+    def __ne__(self, _: Any) -> bool:
         return False
 
 
@@ -69,13 +72,17 @@ class NotSymbol(Symbol):
     def __repr__(self) -> str:
         return f"NotSymbol({self.name})"
 
-    def __eq__(self, other: Symbol) -> bool:
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Symbol):
+            return False
         return self.name != other.name
 
     def __hash__(self) -> int:
         return hash(f"#{self.name}")
 
-    def __ne__(self, other: Symbol) -> bool:
+    def __ne__(self, other: Any) -> bool:
+        if not isinstance(other, Symbol):
+            return True
         return self.name == other.name
 
 
@@ -98,7 +105,9 @@ class ScatterSymbol(Symbol):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def __eq__(self, other: Symbol) -> bool:
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Symbol):
+            return False
         return self.name == other.name
 
 
@@ -130,8 +139,6 @@ class Window:
     """
 
     rows_per_column: list[int]
-    max_rows: int
-    min_rows: int
 
     def __init__(self, rows_per_column: list[int]):
         self.rows_per_column = rows_per_column
@@ -179,9 +186,7 @@ class Reelstrip:
     of the symbol appearing on the reel.
     """
 
-    def __init__(
-        self, symbols: list[Symbol], counts: list[float], shuffle: bool = True
-    ):
+    def __init__(self, symbols: list[Symbol], counts: list[int], shuffle: bool = True):
         self.symbols = self._build_wheel(symbols, counts, shuffle)
         self.counts = counts
 
@@ -192,12 +197,10 @@ class Reelstrip:
             yield str(symbol), count[symbol]
 
     def _build_wheel(
-        self, symbols: list[Symbol], counts: list[float], shuffle: bool = True
+        self, symbols: list[Symbol], counts: list[int], shuffle: bool = True
     ) -> list[Symbol]:
         """Build the wheel based on the symbols and counts."""
-        symbols = sum(
-            [[symbol] * int(count) for symbol, count in zip(symbols, counts)], []
-        )
+        symbols = sum([[symbol] * count for symbol, count in zip(symbols, counts)], [])
         if shuffle:
             random.shuffle(symbols)
         return symbols
@@ -360,13 +363,13 @@ class Machine:
     def pull_lever(self) -> list[list[Symbol]]:
         return [reel.spin(self.window) for reel in self.current_game.reels]
 
-    def evaluate(self, result: list[list[Symbol]]) -> int:
+    def evaluate(self, result: list[list[Symbol]]) -> float:
         payline_winnings = self.evaluate_payline_winnings(result)
         scatter_winnings = self.evaluate_scatter_winnings(result)
         return max(payline_winnings, scatter_winnings)
 
-    def evaluate_payline_winnings(self, result: list[list[Symbol]]) -> int:
-        best_payout = 0
+    def evaluate_payline_winnings(self, result: list[list[Symbol]]) -> float:
+        best_payout = 0.0
         for payline in self.current_game.paylines:
             symbols = [result[wheel][idx] for wheel, idx in enumerate(payline.indices)]
             for rule in self.current_game.pay_rules:
@@ -376,8 +379,8 @@ class Machine:
                     best_payout = max(best_payout, rule.payout)
         return best_payout
 
-    def evaluate_scatter_winnings(self, result: list[list[Symbol]]) -> int:
-        scatter_counts = {}
+    def evaluate_scatter_winnings(self, result: list[list[Symbol]]) -> float:
+        scatter_counts: dict[Symbol, int] = {}
         for reel in result:
             seen_scatters = set()
             for symbol in reel:
@@ -385,7 +388,7 @@ class Machine:
                     scatter_counts[symbol] = scatter_counts.get(symbol, 0) + 1
                     seen_scatters.add(symbol)
 
-        best_scatter_payout = 0
+        best_scatter_payout = 0.0
         for rule in self.current_game.pay_rules:
             if isinstance(rule, ScatterPayRule):
                 count = scatter_counts.get(rule.symbol_pattern[0], 0)

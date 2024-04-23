@@ -29,7 +29,9 @@ class VoiceCog(commands.Cog):
             return
 
         # Leaving a voice channel or going afk
-        if before.channel is not None:
+        if before.channel is not None and not isinstance(
+            before.channel, discord.StageChannel
+        ):
             if after.channel == before.channel.guild.afk_channel:
                 await self.afk_user(member, before.channel)
             else:
@@ -40,6 +42,12 @@ class VoiceCog(commands.Cog):
             await self.greet_user(member)
 
     async def greet_user(self, member: discord.Member):
+        if (
+            member.voice is None
+            or member.voice.channel is None
+            or isinstance(member.voice.channel, discord.StageChannel)
+        ):
+            return
         await self.say_line(f"{member.name} has joined.", member.voice.channel)
 
     async def depart_user(self, member: discord.Member, channel: discord.VoiceChannel):
@@ -83,7 +91,7 @@ class VoiceCog(commands.Cog):
 
         voice_guild = channel.guild
         if voice_guild is not None:
-            voice_channel = await channel.connect()
+            voice_channel: discord.VoiceClient = await channel.connect()
 
             voice_channel.play(FFmpegPCMAudio(buffer.read(), pipe=True))
 

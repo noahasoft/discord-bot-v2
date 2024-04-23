@@ -1,3 +1,4 @@
+from typing import Optional
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -14,13 +15,23 @@ class RoleCog(commands.Cog):
         self,
         interaction: discord.Interaction,
         role_name: str,
-        role_color: str = None,
-        role_permissions: int = None,
+        role_color: Optional[str] = None,
+        role_permissions: Optional[int] = None,
     ):
         """Create a new role with the specified name, color, and permissions."""
+        if not interaction.user:
+            await interaction.response.send_message(
+                "This command must be used by a user."
+            )
+            return
         if not interaction.user.guild_permissions.manage_roles:
             await interaction.response.send_message(
                 "You don't have permission to create roles."
+            )
+            return
+        if not interaction.guild:
+            await interaction.response.send_message(
+                "This command must be used in a server."
             )
             return
 

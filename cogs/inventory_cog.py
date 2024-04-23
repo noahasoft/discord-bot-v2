@@ -7,11 +7,11 @@ import aiosqlite
 
 @app_commands.guild_only()
 class InventoryCog(commands.Cog):
-    def __init__(self, bot):
-        self.bot: discord.Client = bot
+    def __init__(self, bot) -> None:
+        self.bot: commands.Bot = bot
         self.economy_cog = self.bot.get_cog("EconomyCog")
 
-    async def cog_load(self) -> tasks.Coroutine[tasks.Any, tasks.Any, None]:
+    async def cog_load(self) -> None:
         await self.create_inventory_table()
         await super().cog_load()
 
