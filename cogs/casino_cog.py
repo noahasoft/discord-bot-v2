@@ -21,7 +21,7 @@ class CasinoCog(commands.Cog):
         symbols = [Symbol(":apple:"), Symbol(":banana:"), Symbol(":cherries:")]
         counts = [6, 4, 2]
         payouts = [200, 500, 1000]
-        window = Window(3, num_reels)
+        window = Window([3] * num_reels)
         paylines = [window.centerline()]
         pay_rules = [
             PayRule([sym] * num_reels, pay) for sym, pay in zip(symbols, payouts)
@@ -50,7 +50,7 @@ class CasinoCog(commands.Cog):
         result = self.slot_machine.pull_lever()
         winnings = self.slot_machine.evaluate(result)
         response = ""
-        for row in range(self.slot_machine.window.rows):
+        for row in range(self.slot_machine.window.max_rows):
             for (widx, wheel) in enumerate(result):
                 if self.slot_machine.is_on_scoreline(widx, row):
                     response += "**" + wheel[row].name + "** "

@@ -123,33 +123,53 @@ class Payline:
 class Window:
     """
     A window represents the layout of the slot machine reels.
-    It is defined by the number of rows and columns.
+    It is defined by the number of rows per column(wheel).
     A window can be used to create common paylines.
     All paylines are zero-indexed.
     Symbols that appear in a window are called "normal" symbols.
     """
 
-    def __init__(self, rows: int, cols: int) -> None:
-        self.rows, self.cols = rows, cols
+    rows_per_column: list[int]
+    max_rows: int
+    min_rows: int
+
+    def __init__(self, rows_per_column: list[int]):
+        self.rows_per_column = rows_per_column
 
     def __repr__(self) -> str:
-        return f"Window({self.rows}, {self.cols})"
+        return f"Window(rows_per_column={self.rows_per_column})"
+
+    @property
+    def cols(self) -> int:
+        return len(self.rows_per_column)
+
+    @property
+    def max_rows(self) -> int:
+        return max(self.rows_per_column)
+
+    @property
+    def min_rows(self) -> int:
+        return min(self.rows_per_column)
 
     # Convenience methods for creating common paylines
     def centerline(self) -> Payline:
-        return Payline([self.rows // 2] * self.cols)
+        return Payline([rows // 2 for rows in self.rows_per_column])
 
     def topline(self) -> Payline:
         return Payline([0] * self.cols)
 
     def bottomline(self) -> Payline:
-        return Payline([self.rows - 1] * self.cols)
+        return Payline([rows - 1 for rows in self.rows_per_column])
 
     def tl_diag(self) -> Payline:
-        return Payline([i for i in range(self.cols)])
+        return Payline(
+            [min(i, rows - 1) for i, rows in enumerate(self.rows_per_column)]
+        )
 
     def tr_diag(self) -> Payline:
-        return Payline([self.cols - i - 1 for i in range(self.cols)])
+        return Payline(
+            [rows - 1 - min(i, rows - 1) for i, rows in enumerate(self.rows_per_column)]
+        )
 
 
 class Reelstrip:
@@ -183,16 +203,18 @@ class Reelstrip:
         return symbols
 
     def spin(self, window: Window) -> list[Symbol]:
-        """Spin the reelstrip and return a window of symbols"""
-        num_symbols_to_return = window.rows
-        # return a window of symbols, keeping adjacent symbols in the same row
-        center = random.randint(0, len(self.symbols) - 1)
-        wrapped_symbols = cycle(self.symbols)
+        """
+        Spin the reelstrip and return a window of symbols.
+        """
         result = []
-        for _ in range(center - window.cols // 2):
-            next(wrapped_symbols)
-        for _ in range(num_symbols_to_return):
-            result.append(next(wrapped_symbols))
+        for rows in window.rows_per_column:
+            center = random.randint(0, len(self.symbols) - 1)
+            wrapped_symbols = cycle(self.symbols)
+            # Advance the iterator to the center position of this column
+            for _ in range(center - rows // 2):
+                next(wrapped_symbols)
+            column_result = [next(wrapped_symbols) for _ in range(rows)]
+            result.append(column_result[0])
         return result
 
     def get_count(self, symbol: Symbol) -> float:
@@ -325,7 +347,10 @@ class Machine:
         if len(game.reels) != window.cols:
             raise ValueError("Invalid number of reels.")
         for payline in game.paylines:
-            if any(idx >= window.rows for idx in payline.indices):
+            if any(
+                idx >= window.rows_per_column[wheel]
+                for wheel, idx in enumerate(payline.indices)
+            ):
                 raise ValueError("Invalid payline index.")
 
     @property
