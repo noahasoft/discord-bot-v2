@@ -46,6 +46,16 @@ def basic_window():
 
 
 @pytest.fixture
+def flat_window():
+    return Window([1] * 3)
+
+
+@pytest.fixture
+def fat_window():
+    return Window([3] * 5)
+
+
+@pytest.fixture
 def basic_reelstrip(symbol_a, symbol_b):
     return Reelstrip([symbol_a, symbol_b], [1, 1])
 
@@ -105,15 +115,13 @@ def test_window_initialization(rows, cols):
     assert window.cols == cols
 
 
-def test_reelstrip_initialization_and_spinning(symbol_a, symbol_b):
+def test_reelstrip_initialization_and_spinning(symbol_a, symbol_b, flat_window):
     symbols = [symbol_a, symbol_b]
     counts = [1, 3]
     reel = Reelstrip(symbols, counts)
-    assert len(reel._build_wheel(symbols, counts)) == 4  # Simple count check
+    assert len(reel._build_wheel(symbols, counts)) == 4
 
-    window = Window([1] * 3)
-    spin_result = reel.spin(window)
-    # assert len(spin_result) == 1
+    spin_result = reel.spin(flat_window)
     assert isinstance(spin_result[0], Symbol)
 
 
@@ -136,55 +144,52 @@ def test_machine_initialization(basic_game, basic_window):
     assert machine.current_game_idx == 0
 
 
-def test_machine_lever_pull(symbol_a, basic_payrule):
-    window = Window([1] * 3)
+def test_machine_lever_pull(symbol_a, basic_payrule, flat_window):
     games = [
         GameBase(
             "Game1",
-            [window.topline()],
+            [flat_window.topline()],
             [basic_payrule],
             [Reelstrip([symbol_a], [1]) for _ in range(3)],
         )
     ]
-    machine = Machine(games, window)
+    machine = Machine(games, flat_window)
     result = machine.pull_lever()
     assert len(result) == 3
     assert all(symbol.name == "A" for row in result for symbol in row)
 
 
-def test_machine_evaluate_win(symbol_a, basic_payrule):
-    window = Window([1] * 3)
+def test_machine_evaluate_win(symbol_a, basic_payrule, flat_window):
     games = [
         GameBase(
             "Game1",
-            [window.topline()],
+            [flat_window.topline()],
             [basic_payrule],
             [Reelstrip([symbol_a], [1]) for _ in range(3)],
         )
     ]
-    machine = Machine(games, window)
+    machine = Machine(games, flat_window)
     result = [[symbol_a] for _ in range(3)]
     winnings = machine.evaluate(result)
     assert winnings == 1000
 
 
-def test_machine_no_win(symbol_b, basic_reelstrip, basic_payrule):
-    window = Window([1] * 3)
+def test_machine_no_win(symbol_b, basic_reelstrip, basic_payrule, flat_window):
     games = [
         GameBase(
             "Game1",
-            [window.topline()],
+            [flat_window.topline()],
             [basic_payrule],
             [basic_reelstrip for _ in range(3)],
         )
     ]
-    machine = Machine(games, window)
+    machine = Machine(games, flat_window)
     result = [[symbol_b], [symbol_b], [symbol_b]]
     winnings = machine.evaluate(result)
     assert winnings == 0
 
 
-def test_not_rule(symbol_a, symbol_b, basic_reelstrip):
+def test_not_rule(symbol_a, symbol_b, basic_reelstrip, flat_window):
     games = [
         GameBase(
             "Game1",
@@ -193,46 +198,42 @@ def test_not_rule(symbol_a, symbol_b, basic_reelstrip):
             [basic_reelstrip for _ in range(3)],
         )
     ]
-    window = Window([1] * 3)
-    machine = Machine(games, window)
+    machine = Machine(games, flat_window)
     result = [[symbol_a], [symbol_a], [symbol_b]]
     winnings = machine.evaluate(result)
     assert winnings == 1000
 
 
-def test_validate_game_window_valid(symbol_a, symbol_b):
-    window = Window([3] * 5)
+def test_validate_game_window_valid(symbol_a, symbol_b, fat_window):
     game = GameBase(
         "Test Game",
         [Payline([0, 1, 2])],
-        [PayRule(3, 100.0)],
+        [PayRule([symbol_a] * 3, 100.0)],
         [Reelstrip([symbol_a, symbol_b], [1, 9]) for _ in range(5)],
     )
-    Machine.validate_game_window(window, game)  # No exception should be raised
+    Machine.validate_game_window(fat_window, game)  # No exception should be raised
 
 
-def test_validate_game_window_invalid_reels(symbol_a, symbol_b):
-    window = Window([3] * 5)
+def test_validate_game_window_invalid_reels(symbol_a, symbol_b, fat_window):
     game = GameBase(
         "Test Game",
         [Payline([0, 1, 2])],
-        [PayRule(3, 100.0)],
+        [PayRule([symbol_a] * 3, 100.0)],
         [Reelstrip([symbol_a, symbol_b], [1, 9]) for _ in range(3)],
     )
     with pytest.raises(ValueError):
-        Machine.validate_game_window(window, game)
+        Machine.validate_game_window(fat_window, game)
 
 
-def test_validate_game_window_invalid_payline_index(symbol_a, symbol_b):
-    window = Window([3] * 5)
+def test_validate_game_window_invalid_payline_index(symbol_a, symbol_b, fat_window):
     game = GameBase(
         "Test Game",
         [Payline([0, 1, 2, 3])],
-        [PayRule(3, 100.0)],
+        [PayRule([symbol_a] * 3, 100.0)],
         [Reelstrip([symbol_a, symbol_b], [1, 9]) for _ in range(5)],
     )
     with pytest.raises(ValueError):
-        Machine.validate_game_window(window, game)
+        Machine.validate_game_window(fat_window, game)
 
 
 def test_evaluate_multiple_paylines(
@@ -283,7 +284,7 @@ def test_build_wheel(symbol_a, symbol_b):
     assert wheel.count(Symbol("C")) == 3
 
 
-def test_machine_init_with_valid_games(symbol_a, symbol_b, basic_window):
+def test_machine_init_with_valid_games(symbol_a, basic_window, basic_reelstrip):
     games = [
         GameBase(
             "Game1",
@@ -294,8 +295,8 @@ def test_machine_init_with_valid_games(symbol_a, symbol_b, basic_window):
         GameBase(
             "Game2",
             [Payline([0, 1])],
-            [PayRule(2, 100)],
-            [Reelstrip([symbol_a, symbol_b], [1, 1]) for _ in range(3)],
+            [PayRule([symbol_a] * 2, 100)],
+            [basic_reelstrip for _ in range(3)],
         ),
     ]
     machine = Machine(games, basic_window)
@@ -309,85 +310,83 @@ def test_machine_init_with_empty_games(basic_window):
         Machine([], basic_window)
 
 
-def test_machine_init_with_invalid_window(symbol_a):
+def test_machine_init_with_invalid_window(symbol_a, fat_window):
     games = [
         GameBase(
             "Game1",
             [Payline([0])],
-            [PayRule(1, 50)],
+            [PayRule([symbol_a], 50)],
             [Reelstrip([symbol_a], [1]) for _ in range(3)],
         )
     ]
-    window = Window([3] * 5)
     with pytest.raises(ValueError):
-        Machine(games, window)
+        Machine(games, fat_window)
 
 
-def test_machine_pull_lever(symbol_a, symbol_b, basic_payrule, basic_payrule_b):
-    window = Window([1] * 3)
+def test_machine_pull_lever(
+    symbol_a, symbol_b, basic_payrule, basic_payrule_b, flat_window
+):
     games = [
         GameBase(
             "Game1",
-            [window.topline()],
+            [flat_window.topline()],
             [basic_payrule],
             [Reelstrip([symbol_a], [1]) for _ in range(3)],
         ),
         GameBase(
             "Game2",
-            [window.topline()],
+            [flat_window.topline()],
             [basic_payrule_b],
             [Reelstrip([symbol_b], [1]) for _ in range(3)],
         ),
     ]
-    machine = Machine(games, window)
+    machine = Machine(games, flat_window)
     result = machine.pull_lever()
     assert len(result) == 3
     assert all(isinstance(row[0], Symbol) for row in result)
 
 
 def test_machine_evaluate_with_winning_result(
-    symbol_a, symbol_b, basic_payrule, basic_payrule_b
+    symbol_a, symbol_b, basic_payrule, basic_payrule_b, flat_window
 ):
-    window = Window([1] * 3)
     games = [
         GameBase(
             "Game1",
-            [window.topline()],
+            [flat_window.topline()],
             [basic_payrule],
             [Reelstrip([symbol_a], [1]) for _ in range(3)],
         ),
         GameBase(
             "Game2",
-            [window.topline()],
+            [flat_window.topline()],
             [basic_payrule_b],
             [Reelstrip([symbol_b], [1]) for _ in range(3)],
         ),
     ]
-    machine = Machine(games, window)
+    machine = Machine(games, flat_window)
     result = [[symbol_a], [symbol_a], [symbol_a]]
     winnings = machine.evaluate(result)
     assert winnings == 1000
 
 
 def test_machine_evaluate_with_no_win(
-    symbol_a, symbol_b, basic_payrule, basic_payrule_b
+    symbol_b, basic_payrule, basic_payrule_b, flat_window, basic_reelstrip
 ):
-    window = Window([1] * 3)
     games = [
         GameBase(
             "Game1",
-            [window.topline()],
+            [flat_window.topline()],
             [basic_payrule],
-            [Reelstrip([symbol_a, symbol_b], [1, 1]) for _ in range(3)],
+            [basic_reelstrip for _ in range(3)],
         ),
         GameBase(
             "Game2",
-            [window.topline()],
+            [flat_window.topline()],
             [basic_payrule_b],
             [Reelstrip([symbol_b], [1]) for _ in range(3)],
         ),
     ]
-    machine = Machine(games, window)
+    machine = Machine(games, flat_window)
     result = [[symbol_b], [symbol_b], [symbol_b]]
     winnings = machine.evaluate(result)
     assert winnings == 0
@@ -522,11 +521,11 @@ def test_machine_init_with_multiple_games(symbol_a, basic_window, game_count):
 
 
 @pytest.mark.parametrize("invalid_count", [0, 2])
-def test_validate_game_window(invalid_count, basic_window, basic_reelstrip):
+def test_validate_game_window(symbol_a, invalid_count, basic_window, basic_reelstrip):
     game = GameBase(
         "Test Game",
         [Payline([0, 1, 2])],
-        [PayRule([Symbol("A")] * 3, 1000)],
+        [PayRule([symbol_a] * 3, 1000)],
         [basic_reelstrip for _ in range(invalid_count)],
     )
     with pytest.raises(ValueError):
@@ -554,17 +553,16 @@ def test_any_symbol(any_symbol, symbol_a, symbol_b):
     assert hash(any_symbol) == hash("Any")
 
 
-def test_not_payrule(payrule_not_a, symbol_a, symbol_b):
-    window = Window([1] * 3)
+def test_not_payrule(payrule_not_a, symbol_a, symbol_b, flat_window):
     games = [
         GameBase(
             "Game1",
-            [window.topline()],
+            [flat_window.topline()],
             [payrule_not_a],
             [Reelstrip([symbol_a], [1]) for _ in range(3)],
         ),
     ]
-    machine = Machine(games, window)
+    machine = Machine(games, flat_window)
     result = [[symbol_b], [symbol_b], [symbol_b]]
     winnings = machine.evaluate(result)
     assert winnings == 1000
@@ -573,17 +571,16 @@ def test_not_payrule(payrule_not_a, symbol_a, symbol_b):
     assert winnings == 0
 
 
-def test_any_symbol_payrule(payrule_any_symbol, symbol_a, symbol_b):
-    window = Window([1] * 3)
+def test_any_symbol_payrule(payrule_any_symbol, symbol_a, symbol_b, flat_window):
     games = [
         GameBase(
             "Game1",
-            [window.topline()],
+            [flat_window.topline()],
             [payrule_any_symbol],
             [Reelstrip([symbol_a], [1]) for _ in range(3)],
         ),
     ]
-    machine = Machine(games, window)
+    machine = Machine(games, flat_window)
     result = [[symbol_b], [symbol_b], [symbol_b]]
     winnings = machine.evaluate(result)
     assert winnings == 1000
