@@ -93,42 +93,49 @@ class CasinoCog(commands.Cog):
 
     @app_commands.command()
     async def show_slot_stats(
-        self, interaction: discord.Interaction, public: bool = False
+        self,
+        interaction: discord.Interaction,
+        ephemeral: bool = True,
+        all_server: bool = False,
     ):
-        """Show the statistics for the user's slot machine play."""
+        """Show the winnings statistics for the slot machine."""
         user_id = interaction.user.id
+        query = (
+            "SELECT SUM(CASE WHEN value > 0 THEN value ELSE 0 END) AS winnings,"
+            " COUNT(CASE WHEN value > 0 THEN 1 END) AS winnings_count,"
+            " SUM(CASE WHEN value < 0 THEN value ELSE 0 END) AS losses,"
+            " COUNT(CASE WHEN value < 0 THEN 1 END) AS losses_count,"
+            " AVG(value) AS average_winnings"
+            " FROM transactions WHERE "
+            + ("user_id = ? AND " if not all_server else "")
+            + " (description = 'slot winnings' OR description = 'slot cost')"
+        )
+        params = (user_id,) if not all_server else ()
+
         async with aiosqlite.connect("economy.db") as db:
-            async with db.execute(
-                "SELECT SUM(CASE WHEN value > 0 THEN value ELSE 0 END) AS winnings,"
-                " COUNT(CASE WHEN value > 0 THEN 1 END) AS winnings_count,"
-                " SUM(CASE WHEN value < 0 THEN value ELSE 0 END) AS losses,"
-                " COUNT(CASE WHEN value < 0 THEN 1 END) AS losses_count,"
-                " AVG(value) AS average_winnings"
-                " FROM transactions"
-                " WHERE user_id = ?"
-                " AND (description = 'slot winnings' OR description = 'slot cost')",
-                (user_id,),
-            ) as cursor:
-                stats_row = await cursor.fetchone()
-                if stats_row is None:
-                    winnings = 0
-                    winnings_count = 0
-                    losses = 0
-                    losses_count = 0
-                    avg_winnings = 0
-                else:
-                    (
-                        winnings,
-                        winnings_count,
-                        losses,
-                        losses_count,
-                        avg_winnings,
-                    ) = stats_row
+            cursor = await db.execute(query, params)
+            stats_row = await cursor.fetchone()
+
+            if stats_row is None:
+                winnings = 0
+                winnings_count = 0
+                losses = 0
+                losses_count = 0
+                avg_winnings = 0
+            else:
+                (
+                    winnings,
+                    winnings_count,
+                    losses,
+                    losses_count,
+                    avg_winnings,
+                ) = stats_row
+
         await interaction.response.send_message(
-            f"**{interaction.user.name} Slot Stats**\n"
+            f"**{interaction.user.name if not all_server else 'Total'} Slot Stats**\n"
             f"Winnings: ${winnings:.2f}\nLosses: ${losses:.2f}\nNet: ${winnings + losses:.2f}"
             f"\nGames Played: {winnings_count + losses_count}"
             f"\nAverage Winnings: ${avg_winnings:.2f}"
             f"\nWin Rate: {(winnings_count / (winnings_count + losses_count)) * 100:.2f}%",
-            ephemeral=(not public),
+            ephemeral=ephemeral,
         )
