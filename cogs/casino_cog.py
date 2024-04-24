@@ -1,3 +1,4 @@
+import aiosqlite
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -89,3 +90,35 @@ class CasinoCog(commands.Cog):
             for line in game.paylines:
                 response += f"{'-'.join(list(map(str, line.indices)))}\n"
         await interaction.response.send_message(response, ephemeral=True)
+
+    @app_commands.command()
+    async def show_slot_stats(
+        self, interaction: discord.Interaction, public: bool = False
+    ):
+        """Show the statistics for the user's slot machine play."""
+        user_id = interaction.user.id
+        async with aiosqlite.connect("economy.db") as db:
+            async with db.execute(
+                "SELECT SUM(CASE WHEN value > 0 THEN value ELSE 0 END) AS winnings,"
+                " COUNT(CASE WHEN value > 0 THEN 1 END) AS winnings_count,"
+                " SUM(CASE WHEN value < 0 THEN value ELSE 0 END) AS losses,"
+                " COUNT(CASE WHEN value < 0 THEN 1 END) AS losses_count"
+                " FROM transactions"
+                " WHERE user_id = ?"
+                " AND (description = 'slot winnings' OR description = 'slot cost')",
+                (user_id,),
+            ) as cursor:
+                stats_row = await cursor.fetchone()
+                if stats_row is None:
+                    winnings = 0
+                    winnings_count = 0
+                    losses = 0
+                    losses_count = 0
+                else:
+                    winnings, winnings_count, losses, losses_count = stats_row
+        await interaction.response.send_message(
+            f"**Slot Stats**\nWinnings: {winnings}\nLosses: {losses}\nNet: {winnings + losses}"
+            f"\nGames Played: {winnings_count + losses_count}"
+            f"\nWin Rate: {(winnings_count / (winnings_count + losses_count)) * 100:.2f}%",
+            ephemeral=(not public),
+        )
