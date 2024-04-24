@@ -132,10 +132,13 @@ class CasinoCog(commands.Cog):
                 ) = stats_row
 
         await interaction.response.send_message(
-            f"**{interaction.user.name if not all_server else 'Total'} Slot Stats**\n"
-            f"Winnings: ${winnings:.2f}\nLosses: ${losses:.2f}\nNet: ${winnings + losses:.2f}"
-            f"\nGames Played: {winnings_count + losses_count}"
-            f"\nAverage Winnings: ${avg_winnings:.2f}"
-            f"\nWin Rate: {(winnings_count / (winnings_count + losses_count)) * 100:.2f}%",
+            f"**{interaction.user.name if not all_server else 'Total'} Slot Stats**"
+            f"\n----------------"
+            f"\n**Winnings**: ${winnings:.2f}"
+            f"\n**Losses**: ${losses:.2f}"
+            f"\n**Net**: ${winnings + losses:.2f}"
+            f"\n**Games Played**: {winnings_count + losses_count}"
+            f"\n**Average Winnings**: ${avg_winnings:.2f}"
+            f"\n**Win Rate**: {(winnings_count / (winnings_count + losses_count)) * 100:.2f}%",
             ephemeral=ephemeral,
         )
