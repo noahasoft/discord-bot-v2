@@ -102,7 +102,8 @@ class CasinoCog(commands.Cog):
                 "SELECT SUM(CASE WHEN value > 0 THEN value ELSE 0 END) AS winnings,"
                 " COUNT(CASE WHEN value > 0 THEN 1 END) AS winnings_count,"
                 " SUM(CASE WHEN value < 0 THEN value ELSE 0 END) AS losses,"
-                " COUNT(CASE WHEN value < 0 THEN 1 END) AS losses_count"
+                " COUNT(CASE WHEN value < 0 THEN 1 END) AS losses_count,"
+                " AVG(value) AS average_winnings"
                 " FROM transactions"
                 " WHERE user_id = ?"
                 " AND (description = 'slot winnings' OR description = 'slot cost')",
@@ -114,11 +115,20 @@ class CasinoCog(commands.Cog):
                     winnings_count = 0
                     losses = 0
                     losses_count = 0
+                    avg_winnings = 0
                 else:
-                    winnings, winnings_count, losses, losses_count = stats_row
+                    (
+                        winnings,
+                        winnings_count,
+                        losses,
+                        losses_count,
+                        avg_winnings,
+                    ) = stats_row
         await interaction.response.send_message(
-            f"**Slot Stats**\nWinnings: {winnings}\nLosses: {losses}\nNet: {winnings + losses}"
+            f"**{interaction.user.name} Slot Stats**\n"
+            f"Winnings: ${winnings:.2f}\nLosses: ${losses:.2f}\nNet: ${winnings + losses:.2f}"
             f"\nGames Played: {winnings_count + losses_count}"
+            f"\nAverage Winnings: ${avg_winnings:.2f}"
             f"\nWin Rate: {(winnings_count / (winnings_count + losses_count)) * 100:.2f}%",
             ephemeral=(not public),
         )
