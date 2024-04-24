@@ -32,9 +32,9 @@ class MyBot(commands.Bot):
         await self.add_cog(WhitelistCog(self))
         await self.add_cog(RoleCog(self))
         await self.add_cog(EconomyCog(self))
-        await self.add_cog(UtilitiesCog(self))
-        await self.add_cog(CasinoCog(self))
         await self.add_cog(InventoryCog(self))
+        await self.add_cog(CasinoCog(self))
+        await self.add_cog(UtilitiesCog(self))
         self.tree.copy_global_to(guild=MY_GUILD)
         await self.tree.sync(guild=MY_GUILD)
 

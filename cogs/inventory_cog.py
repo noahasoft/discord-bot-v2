@@ -84,14 +84,23 @@ class InventoryCog(commands.Cog):
             ) as cursor:
                 return await cursor.fetchall()
 
-    async def add_item(self, name: str, cost: int, properties: dict):
+    async def add_item(self, name: str, cost: int, properties: dict, description: str):
         properties_str = json.dumps(properties)
         async with aiosqlite.connect("economy.db") as db:
             await db.execute(
-                "INSERT INTO items (name, cost, properties) VALUES (?, ?, ?)",
-                (name, cost, properties_str),
+                "INSERT INTO items (name, cost, properties) VALUES (?, ?, ?, ?)",
+                (name, cost, properties_str, description),
             )
             await db.commit()
+
+    async def get_item_quantity(self, user_id: int, item_id: int) -> int:
+        async with aiosqlite.connect("economy.db") as db:
+            async with db.execute(
+                "SELECT quantity FROM inventory WHERE user_id = ? AND item_id = ?",
+                (user_id, item_id),
+            ) as cursor:
+                result = await cursor.fetchone()
+                return result[0] if result else 0
 
     @app_commands.command()
     async def show_inventory(self, interaction: discord.Interaction):
@@ -115,12 +124,11 @@ class InventoryCog(commands.Cog):
     @app_commands.command()
     async def list_shop(self, interaction: discord.Interaction):
         response = "Items:\n"
+        response += "ID: Name | Cost | Properties | Description\n"
         async with aiosqlite.connect("economy.db") as db:
             async with db.execute("SELECT * FROM items") as cursor:
                 items = await cursor.fetchall()
                 for item in items:
                     item_id, name, cost, properties, description = item
-                    response += (
-                        f"{item_id}: {name} - ${cost} ({properties}) [{description}]\n"
-                    )
+                    response += f"**{item_id}**: {name} | ${cost} | ({properties}) | {description}\n"
         await interaction.response.send_message(response, ephemeral=True)

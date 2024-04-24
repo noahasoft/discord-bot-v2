@@ -128,6 +128,10 @@ class Payline:
     def __repr__(self) -> str:
         return f"Payline({self.indices})"
 
+    def adapt(self, reel: "Reelstrip") -> None:
+        """Adapt the payline to the reelstrip by extending the indices"""
+        self.indices.append(self.indices[-1])
+
 
 class Window:
     """
@@ -158,6 +162,10 @@ class Window:
     def min_rows(self) -> int:
         return min(self.rows_per_column)
 
+    def adapt(self, reel: "Reelstrip") -> None:
+        """Adapt the window to the reelstrip by padding."""
+        self.rows_per_column.append(self.rows_per_column[-1])
+
     # Convenience methods for creating common paylines
     def centerline(self) -> Payline:
         return Payline([rows // 2 for rows in self.rows_per_column])
@@ -187,6 +195,7 @@ class Reelstrip:
     """
 
     def __init__(self, symbols: list[Symbol], counts: list[int], shuffle: bool = True):
+        self._base_symbols = symbols
         self.symbols = self._build_wheel(symbols, counts, shuffle)
         self.counts = counts
 
@@ -229,6 +238,9 @@ class Reelstrip:
     def __str__(self) -> str:
         return str(dict(self))
 
+    def copy(self) -> "Reelstrip":
+        return Reelstrip(self._base_symbols, self.counts)
+
 
 class PayRule:
     """
@@ -247,6 +259,13 @@ class PayRule:
 
     def __str__(self) -> str:
         return self.__repr__()
+
+    def evaluate(self, symbols: list[Symbol]) -> bool:
+        """Check if symbol list contains the winning pattern as a substring."""
+        return any(
+            self.symbol_pattern == symbols[idx : idx + len(self.symbol_pattern)]
+            for idx in range(len(symbols))
+        )
 
 
 class AnyPayRule:
@@ -373,9 +392,7 @@ class Machine:
         for payline in self.current_game.paylines:
             symbols = [result[wheel][idx] for wheel, idx in enumerate(payline.indices)]
             for rule in self.current_game.pay_rules:
-                if not isinstance(rule, ScatterPayRule) and all(
-                    s == r for s, r in zip(symbols, rule.symbol_pattern)
-                ):
+                if not isinstance(rule, ScatterPayRule) and rule.evaluate(symbols):
                     best_payout = max(best_payout, rule.payout)
         return best_payout
 
@@ -456,3 +473,17 @@ class Machine:
             if self.rtp(1.0) != 0
             else float("inf")
         )
+
+    def add_reel(self, reel: Reelstrip):
+        """Add a new reel to the slot machine."""
+        self.current_game.reels.append(reel)
+        self.window.adapt(reel)
+        for payline in self.current_game.paylines:
+            payline.adapt(reel)
+
+    def remove_reel(self):
+        """Remove the last reel from the slot machine."""
+        self.current_game.reels.pop()
+        self.window.rows_per_column.pop()
+        for payline in self.current_game.paylines:
+            payline.indices.pop()

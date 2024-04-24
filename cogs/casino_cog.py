@@ -2,6 +2,7 @@ import aiosqlite
 import discord
 from discord import app_commands
 from discord.ext import commands
+from copy import deepcopy
 
 from cogs.games.slots import (
     PayRule,
@@ -12,16 +13,20 @@ from cogs.games.slots import (
     Window,
 )
 
+EXTRA_REEL_ITEM_ID = 0
+
 
 @app_commands.guild_only()
 class CasinoCog(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot: commands.Bot = bot
         self.economy_cog = self.bot.get_cog("EconomyCog")
+        self.inventory_cog = self.bot.get_cog("InventoryCog")
         num_reels = 3
         symbols = [Symbol(":apple:"), Symbol(":banana:"), Symbol(":cherries:")]
         counts = [6, 4, 2]
         payouts = [200, 500, 1000]
+        self.base_reelstrip = Reelstrip(symbols, counts)
         window = Window([3] * num_reels)
         paylines = [window.centerline()]
         pay_rules = [
@@ -33,12 +38,16 @@ class CasinoCog(commands.Cog):
                     "Default",
                     paylines,
                     pay_rules,
-                    [Reelstrip(symbols, counts) for _ in range(num_reels)],
+                    [self.base_reelstrip.copy() for _ in range(num_reels)],
                 )
             ],
             window,
         )
         self.slot_cost = 20
+
+    async def cog_load(self) -> None:
+        await self.add_slot_items()
+        await super().cog_load()
 
     @app_commands.command()
     async def slots(self, interaction: discord.Interaction):
@@ -47,18 +56,23 @@ class CasinoCog(commands.Cog):
         if balance < self.slot_cost:
             await interaction.response.send_message("Insufficient balance.")
             return
-
-        result = self.slot_machine.pull_lever()
-        winnings = self.slot_machine.evaluate(result)
+        machine = deepcopy(self.slot_machine)
+        extra_reels = await self.inventory_cog.get_item_quantity(
+            interaction.user.id, EXTRA_REEL_ITEM_ID
+        )
+        for _ in range(extra_reels):
+            machine.add_reel(self.base_reelstrip.copy())
+        result = machine.pull_lever()
+        winnings = machine.evaluate(result)
         response = ""
-        for row in range(self.slot_machine.window.max_rows):
+        for row in range(machine.window.max_rows):
             for (widx, wheel) in enumerate(result):
-                if self.slot_machine.is_on_scoreline(widx, row):
+                if machine.is_on_scoreline(widx, row):
                     response += "**" + wheel[row].name + "** "
                 else:
                     response += wheel[row].name + " "
             # Can only signify linear paylines for now
-            if self.slot_machine.is_on_scoreline(0, row):
+            if machine.is_on_scoreline(0, row):
                 response += " <<<"
             response += "\n"
 
@@ -142,3 +156,18 @@ class CasinoCog(commands.Cog):
             f"\n**Win Rate**: {(winnings_count / (winnings_count + losses_count)) * 100:.2f}%",
             ephemeral=ephemeral,
         )
+
+    async def add_slot_items(self):
+        """Build slot machine inventory items in the database."""
+        async with aiosqlite.connect("economy.db") as db:
+            await db.execute(
+                "INSERT OR IGNORE INTO items (item_id, name, cost, properties, description) VALUES (?, ?, ?, ?, ?)",
+                (
+                    EXTRA_REEL_ITEM_ID,
+                    "Additional Reel",
+                    10_000,
+                    str({}),
+                    "Adds an additional reel to the slot machine.",
+                ),
+            )
+            await db.commit()
