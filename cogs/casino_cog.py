@@ -8,6 +8,7 @@ from cogs.games.slots import (
     PayRule,
     GameBase,
     Machine,
+    Payline,
     Symbol,
     Reelstrip,
     Window,
@@ -28,7 +29,9 @@ class CasinoCog(commands.Cog):
         payouts = [200, 500, 1000]
         self.base_reelstrip = Reelstrip(symbols, counts)
         window = Window([3] * num_reels)
-        paylines = [window.centerline()]
+        paylines = [
+            window.centerline(),
+        ]
         pay_rules = [
             PayRule([sym] * num_reels, pay) for sym, pay in zip(symbols, payouts)
         ]
@@ -91,6 +94,42 @@ class CasinoCog(commands.Cog):
                 f"{response}\nBetter luck next time! You lost ${self.slot_cost:.2f}."
             )
 
+    @staticmethod
+    def render_payline_ascii(payline: Payline, window: Window):
+        art = [
+            [" " for _ in range(window.rows_per_column[c])] for c in range(window.cols)
+        ]
+
+        for i in range(len(payline.indices) - 1):
+            start_row = payline.indices[i]
+            end_row = payline.indices[i + 1]
+            if start_row == end_row:
+                art[start_row] = ["―" for _ in range(window.cols)]
+            elif start_row < end_row:
+                step = 1
+                slope_char = "╲"
+            else:
+                step = -1
+                slope_char = "╱"
+
+            # Draw the slope between start_row and end_row
+            if start_row != end_row:
+                col_step = (window.cols - 1) // (abs(end_row - start_row))
+                for offset, row in enumerate(range(start_row, end_row + step, step)):
+                    if (
+                        0 <= row < window.rows_per_column[row]
+                        and 0 <= offset * col_step < window.cols
+                    ):
+                        art[row][offset * col_step] = slope_char
+
+        # Handle the case when there is only one index or last index with a horizontal line
+        if len(payline.indices) == 1 or payline.indices[-2] != payline.indices[-1]:
+            last_row = payline.indices[-1]
+            art[last_row] = ["―" for _ in range(window.cols)]
+
+        # Convert each row of the art to a string and join them with newlines
+        return "\n".join("".join(row) for row in art)
+
     @app_commands.command()
     async def show_rules(self, interaction: discord.Interaction):
         """Show the rules and payouts for the slot machine."""
@@ -100,9 +139,12 @@ class CasinoCog(commands.Cog):
             response += f"*Game {game.name}*\n"
             for rule in game.pay_rules:
                 response += f"{''.join(list(map(str, rule.symbol_pattern)))} --- ${rule.payout:.2f}\n"
-            response += "\n**Paylines (Zero indexed)**:\n"
-            for line in game.paylines:
-                response += f"{'-'.join(list(map(str, line.indices)))}\n"
+            response += "\n**Paylines**:\n"
+            # render all paylines to string
+            for payline in game.paylines:
+                response += "```"
+                response += self.render_payline_ascii(payline, self.slot_machine.window)
+                response += "```\n\n"
         await interaction.response.send_message(response, ephemeral=True)
 
     @app_commands.command()
