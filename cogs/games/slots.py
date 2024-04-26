@@ -2,12 +2,47 @@ from math import prod
 import random
 from itertools import cycle
 from collections import Counter
+from enum import Enum
 
 from dataclasses import dataclass
 from typing import Any
 import warnings
 
 ROUNDING_PRECISION = 6
+
+
+class RewardType(Enum):
+    MONEY = 0
+    SPIN = 1
+
+
+class Reward:
+    """
+    A reward can be money or a free spin.
+    """
+
+    def __init__(self, reward_type: RewardType, value: float):
+        self.reward_type = reward_type
+        self.value = value
+
+    def __repr__(self) -> str:
+        return f"Reward({self.reward_type}, {self.value})"
+
+    def __str__(self) -> str:
+        return f"{self.value} {self.reward_type.name.lower()}"
+
+    # A free game is always better than money
+    def __gt__(self, other: "Reward") -> bool:
+        if self.reward_type == RewardType.SPIN:
+            return True
+        if other.reward_type == RewardType.SPIN:
+            return False
+        return self.value > other.value
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Reward):
+            return False
+        return self.reward_type == other.reward_type and self.value == other.value
 
 
 @dataclass
@@ -249,13 +284,13 @@ class PayRule:
     more complex pay rules.
     """
 
-    def __init__(self, symbol_pattern: list[Symbol], payout: float):
+    def __init__(self, symbol_pattern: list[Symbol], reward: Reward):
         self.symbol_pattern = symbol_pattern
-        self.payout = payout
+        self.reward = reward
 
     def __repr__(self) -> str:
         rule_string = f"[{', '.join(str(symbol) for symbol in self.symbol_pattern)}]"
-        return f"PayRule({rule_string}, {self.payout})"
+        return f"PayRule({rule_string}, {self.reward})"
 
     def __str__(self) -> str:
         return self.__repr__()
@@ -274,8 +309,8 @@ class AnyPayRule:
     that can match any other symbol.
     """
 
-    def __init__(self, symbol_pattern: list[Symbol], payout: float):
-        self.payout = payout
+    def __init__(self, symbol_pattern: list[Symbol], reward: Reward):
+        self.reward = reward
         self._base_symbol_pattern = symbol_pattern
         self._all_symbols = set(symbol_pattern) - {AnySymbol()}
         self.symbol_patterns = self._generate_symbol_patterns(symbol_pattern)
@@ -297,25 +332,25 @@ class AnyPayRule:
             return self._generate_symbol_patterns(pattern, idx + 1)
 
     def __repr__(self) -> str:
-        return f"AnyPayRule({self._base_symbol_pattern}, {self.payout})"
+        return f"AnyPayRule({self._base_symbol_pattern}, {self.reward})"
 
 
 class ScatterPayRule(PayRule):
-    def __init__(self, symbol_pattern: list[Symbol], min_count: int, payout: float):
-        super().__init__(symbol_pattern, payout)
+    def __init__(self, symbol_pattern: list[Symbol], min_count: int, reward: Reward):
+        super().__init__(symbol_pattern, reward)
         self.min_count = min_count
 
     def __repr__(self) -> str:
         symbol_str = (
             "[" + ", ".join(symbol.__repr__() for symbol in self.symbol_pattern) + "]"
         )
-        return f"ScatterPayRule({symbol_str}, min_count={self.min_count}, payout={self.payout})"
+        return f"ScatterPayRule({symbol_str}, min_count={self.min_count}, reward={self.reward})"
 
     def __str__(self) -> str:
         symbol_str = (
             "[" + ", ".join(str(symbol) for symbol in self.symbol_pattern) + "]"
         )
-        return f"ScatterPayRule({symbol_str}, min_count={self.min_count}, payout={self.payout})"
+        return f"ScatterPayRule({symbol_str}, min_count={self.min_count}, reward={self.reward})"
 
 
 class GameBase:
@@ -334,11 +369,13 @@ class GameBase:
         paylines: list[Payline],
         pay_rules: list[PayRule],
         reels: list[Reelstrip],
+        is_free_game: bool = False,
     ):
         self.name = name
         self.paylines = paylines
         self.pay_rules = pay_rules
         self.reels = reels
+        self.is_free_game = is_free_game
 
     def __repr__(self) -> str:
         return f"GameBase({self.name})"
@@ -382,21 +419,21 @@ class Machine:
     def pull_lever(self) -> list[list[Symbol]]:
         return [reel.spin(self.window) for reel in self.current_game.reels]
 
-    def evaluate(self, result: list[list[Symbol]]) -> float:
+    def evaluate(self, result: list[list[Symbol]]) -> Reward:
         payline_winnings = self.evaluate_payline_winnings(result)
         scatter_winnings = self.evaluate_scatter_winnings(result)
         return max(payline_winnings, scatter_winnings)
 
-    def evaluate_payline_winnings(self, result: list[list[Symbol]]) -> float:
-        best_payout = 0.0
+    def evaluate_payline_winnings(self, result: list[list[Symbol]]) -> Reward:
+        best_payout = Reward(RewardType.MONEY, 0.0)
         for payline in self.current_game.paylines:
             symbols = [result[wheel][idx] for wheel, idx in enumerate(payline.indices)]
             for rule in self.current_game.pay_rules:
                 if not isinstance(rule, ScatterPayRule) and rule.evaluate(symbols):
-                    best_payout = max(best_payout, rule.payout)
+                    best_payout = max(best_payout, rule.reward)
         return best_payout
 
-    def evaluate_scatter_winnings(self, result: list[list[Symbol]]) -> float:
+    def evaluate_scatter_winnings(self, result: list[list[Symbol]]) -> Reward:
         scatter_counts: dict[Symbol, int] = {}
         for reel in result:
             seen_scatters = set()
@@ -405,12 +442,12 @@ class Machine:
                     scatter_counts[symbol] = scatter_counts.get(symbol, 0) + 1
                     seen_scatters.add(symbol)
 
-        best_scatter_payout = 0.0
+        best_scatter_payout = Reward(RewardType.MONEY, 0.0)
         for rule in self.current_game.pay_rules:
             if isinstance(rule, ScatterPayRule):
                 count = scatter_counts.get(rule.symbol_pattern[0], 0)
                 if count >= rule.min_count:
-                    best_scatter_payout = max(best_scatter_payout, rule.payout)
+                    best_scatter_payout = max(best_scatter_payout, rule.reward)
         return best_scatter_payout
 
     @property
@@ -432,7 +469,8 @@ class Machine:
                         if pay_rule.symbol_pattern[idx] is not None
                         else sum(reel.counts) / len(reel.symbols)
                     )
-                    for idx, reel in enumerate(self.current_game.reels)
+                    for game in self.games
+                    for idx, reel in enumerate(game.reels)
                 ]
             ),
             ROUNDING_PRECISION,
@@ -455,12 +493,16 @@ class Machine:
     @property
     def total_prob_winning(self) -> float:
         """Calculate the total probability of winning [0., 1.]"""
-        return sum(self.prob_winning(rule) for rule in self.current_game.pay_rules)
+        return sum(
+            self.prob_winning(rule) for game in self.games for rule in game.pay_rules
+        )
 
     def rtp(self, avg_bet: float) -> float:
         if avg_bet == 0:
             return 1.0
-        total_payout = sum(rule.payout for rule in self.current_game.pay_rules)
+        total_payout = sum(
+            rule.reward.value for game in self.games for rule in game.pay_rules
+        )
         return round(
             self.total_prob_winning * total_payout / avg_bet, ROUNDING_PRECISION
         )

@@ -2,7 +2,8 @@ import pytest
 from cogs.games.slots import (
     PayRule,
     GameBase,
-    Machine,
+    Reward,
+    RewardType,
     Symbol,
     Reelstrip,
     Window,
@@ -61,27 +62,32 @@ def basic_reelstrip(symbol_a, symbol_b):
 
 @pytest.fixture
 def basic_payrule(symbol_a):
-    return PayRule([symbol_a] * 3, 1000)
+    return PayRule([symbol_a] * 3, Reward(RewardType.MONEY, 1000))
 
 
 @pytest.fixture
 def basic_payrule_b(symbol_b):
-    return PayRule([symbol_b] * 3, 500)
+    return PayRule([symbol_b] * 3, Reward(RewardType.MONEY, 500))
 
 
 @pytest.fixture
 def payrule_not_a(not_symbol_a):
-    return PayRule([not_symbol_a] * 3, 1000)
+    return PayRule([not_symbol_a] * 3, Reward(RewardType.MONEY, 1000))
 
 
 @pytest.fixture
 def payrule_any_symbol(any_symbol):
-    return PayRule([any_symbol] * 3, 1000)
+    return PayRule([any_symbol] * 3, Reward(RewardType.MONEY, 1000))
+
+
+@pytest.fixture
+def payrule_free_spin(symbol_a):
+    return PayRule([symbol_a] * 3, Reward(RewardType.SPIN, 1))
 
 
 @pytest.fixture
 def payrule_scatter_symbol(scatter_symbol):
-    return ScatterPayRule([scatter_symbol] * 3, 3, 1000)
+    return ScatterPayRule([scatter_symbol] * 3, 3, Reward(RewardType.MONEY, 1000))
 
 
 @pytest.fixture
@@ -91,4 +97,25 @@ def basic_game(basic_window, basic_reelstrip, basic_payrule):
         [basic_window.tl_diag()],
         [basic_payrule],
         [basic_reelstrip for _ in range(3)],
+    )
+
+
+@pytest.fixture
+def free_spin_game(basic_window, basic_reelstrip, payrule_free_spin):
+    return GameBase(
+        "Free Spin Game",
+        [basic_window.tl_diag()],
+        [payrule_free_spin],
+        [basic_reelstrip for _ in range(3)],
+    )
+
+
+@pytest.fixture
+def free_game(basic_window, basic_reelstrip, basic_payrule):
+    return GameBase(
+        "Free Game",
+        [basic_window.tl_diag()],
+        [basic_payrule],
+        [basic_reelstrip for _ in range(3)],
+        is_free_game=True,
     )

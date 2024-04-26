@@ -52,11 +52,11 @@ def test_anypayrule(symbol_a, symbol_b, any_symbol):
 def test_scatter_payrule(payrule_scatter_symbol):
     assert (
         repr(payrule_scatter_symbol)
-        == "ScatterPayRule([ScatterSymbol(A), ScatterSymbol(A), ScatterSymbol(A)], min_count=3, payout=1000)"
+        == "ScatterPayRule([ScatterSymbol(A), ScatterSymbol(A), ScatterSymbol(A)], min_count=3, reward=1000 money)"
     )
     assert (
         str(payrule_scatter_symbol)
-        == "ScatterPayRule([A.s, A.s, A.s], min_count=3, payout=1000)"
+        == "ScatterPayRule([A.s, A.s, A.s], min_count=3, reward=1000 money)"
     )
     assert payrule_scatter_symbol == payrule_scatter_symbol
     assert payrule_scatter_symbol != 1000

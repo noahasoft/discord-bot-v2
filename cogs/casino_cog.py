@@ -9,6 +9,7 @@ from cogs.games.slots import (
     GameBase,
     Machine,
     Payline,
+    RewardType,
     Symbol,
     Reelstrip,
     Window,
@@ -65,19 +66,27 @@ class CasinoCog(commands.Cog):
         )
         for _ in range(extra_reels):
             machine.add_reel(self.base_reelstrip.copy())
-        result = machine.pull_lever()
-        winnings = machine.evaluate(result)
-        response = ""
-        for row in range(machine.window.max_rows):
-            for (widx, wheel) in enumerate(result):
-                if machine.is_on_scoreline(widx, row):
-                    response += "**" + wheel[row].name + "** "
-                else:
-                    response += wheel[row].name + " "
-            # Can only signify linear paylines for now
-            if machine.is_on_scoreline(0, row):
-                response += " <<<"
-            response += "\n"
+        spins = 1
+        winnings = 0.0
+        while spins > 0:
+            result = machine.pull_lever()
+            reward = machine.evaluate(result)
+            response = ""
+            for row in range(machine.window.max_rows):
+                for (widx, wheel) in enumerate(result):
+                    if machine.is_on_scoreline(widx, row):
+                        response += "**" + wheel[row].name + "** "
+                    else:
+                        response += wheel[row].name + " "
+                # Can only signify linear paylines for now
+                if machine.is_on_scoreline(0, row):
+                    response += " <<<"
+                response += "\n"
+            if reward.reward_type == RewardType.SPIN:
+                spins += int(reward.value)
+            if reward.reward_type == RewardType.MONEY:
+                winnings += reward.value
+            spins -= 1
 
         if winnings > 0:
             await self.economy_cog.deposit_money(
@@ -138,7 +147,7 @@ class CasinoCog(commands.Cog):
         for game in self.slot_machine.games:
             response += f"*Game {game.name}*\n"
             for rule in game.pay_rules:
-                response += f"{''.join(list(map(str, rule.symbol_pattern)))} --- ${rule.payout:.2f}\n"
+                response += f"{''.join(list(map(str, rule.symbol_pattern)))} --- ${rule.reward.value:.2f}\n"
             response += "\n**Paylines**:\n"
             # render all paylines to string
             for payline in game.paylines:

@@ -5,6 +5,8 @@ from cogs.games.slots import (
     Reelstrip,
     PayRule,
     Payline,
+    Reward,
+    RewardType,
     Symbol,
     Window,
 )
@@ -50,7 +52,7 @@ def test_machine_evaluate_win(symbol_a, basic_payrule, flat_window):
     machine = Machine(games, flat_window)
     result = [[symbol_a] for _ in range(3)]
     winnings = machine.evaluate(result)
-    assert winnings == 1000
+    assert winnings.value == 1000
 
 
 def test_machine_no_win(symbol_b, basic_reelstrip, basic_payrule, flat_window):
@@ -65,7 +67,7 @@ def test_machine_no_win(symbol_b, basic_reelstrip, basic_payrule, flat_window):
     machine = Machine(games, flat_window)
     result = [[symbol_b], [symbol_b], [symbol_b]]
     winnings = machine.evaluate(result)
-    assert winnings == 0
+    assert winnings.value == 0
 
 
 def test_validate_game_window_valid(symbol_a, symbol_b, fat_window):
@@ -118,7 +120,7 @@ def test_evaluate_multiple_paylines(
         [symbol_b, symbol_b, symbol_a],  # xxa
     ]
     winnings = machine.evaluate(result)
-    assert winnings == 1000
+    assert winnings.value == 1000
 
     result = [
         [symbol_b, symbol_b, symbol_b],  # bbb
@@ -126,7 +128,7 @@ def test_evaluate_multiple_paylines(
         [symbol_b, symbol_b, symbol_a],  # bbx
     ]
     winnings = machine.evaluate(result)
-    assert winnings == 500
+    assert winnings.value == 500
 
 
 def test_machine_init_with_valid_games(symbol_a, basic_window, basic_reelstrip):
@@ -211,7 +213,7 @@ def test_machine_evaluate_with_winning_result(
     machine = Machine(games, flat_window)
     result = [[symbol_a], [symbol_a], [symbol_a]]
     winnings = machine.evaluate(result)
-    assert winnings == 1000
+    assert winnings.value == 1000
 
 
 def test_machine_evaluate_with_no_win(
@@ -234,7 +236,7 @@ def test_machine_evaluate_with_no_win(
     machine = Machine(games, flat_window)
     result = [[symbol_b], [symbol_b], [symbol_b]]
     winnings = machine.evaluate(result)
-    assert winnings == 0
+    assert winnings.value == 0
 
 
 def test_machine_is_on_scoreline(
@@ -370,14 +372,14 @@ def test_not_rule(symbol_a, symbol_b, basic_reelstrip, flat_window):
         GameBase(
             "Game1",
             [Payline([0, 0, 0])],
-            [PayRule([symbol_a, symbol_a], 1000)],
+            [PayRule([symbol_a, symbol_a], Reward(RewardType.MONEY, 1000))],
             [basic_reelstrip for _ in range(3)],
         )
     ]
     machine = Machine(games, flat_window)
     result = [[symbol_a], [symbol_a], [symbol_b]]
     winnings = machine.evaluate(result)
-    assert winnings == 1000
+    assert winnings.value == 1000
 
 
 @pytest.mark.parametrize("invalid_count", [0, 2])
@@ -396,7 +398,7 @@ def test_machine_lever_pull_and_evaluate_win(basic_game, basic_window):
     machine = Machine([basic_game], basic_window)
     result = machine.pull_lever()
     winnings = machine.evaluate(result)
-    assert isinstance(result, list) and isinstance(winnings, (int, float))
+    assert isinstance(result, list) and isinstance(winnings, Reward)
 
 
 def test_not_payrule(payrule_not_a, symbol_a, symbol_b, flat_window):
@@ -411,10 +413,10 @@ def test_not_payrule(payrule_not_a, symbol_a, symbol_b, flat_window):
     machine = Machine(games, flat_window)
     result = [[symbol_b], [symbol_b], [symbol_b]]
     winnings = machine.evaluate(result)
-    assert winnings == 1000
+    assert winnings.value == 1000
     result = [[symbol_a], [symbol_a], [symbol_a]]
     winnings = machine.evaluate(result)
-    assert winnings == 0
+    assert winnings.value == 0
 
 
 def test_any_symbol_payrule(payrule_any_symbol, symbol_a, symbol_b, flat_window):
@@ -429,10 +431,10 @@ def test_any_symbol_payrule(payrule_any_symbol, symbol_a, symbol_b, flat_window)
     machine = Machine(games, flat_window)
     result = [[symbol_b], [symbol_b], [symbol_b]]
     winnings = machine.evaluate(result)
-    assert winnings == 1000
+    assert winnings.value == 1000
     result = [[symbol_a], [symbol_a], [symbol_a]]
     winnings = machine.evaluate(result)
-    assert winnings == 1000
+    assert winnings.value == 1000
 
 
 def test_run_scatter_payrule(symbol_a, symbol_b, payrule_scatter_symbol, basic_window):
@@ -451,4 +453,19 @@ def test_run_scatter_payrule(symbol_a, symbol_b, payrule_scatter_symbol, basic_w
         [symbol_b, symbol_b, symbol_a],
     ]
     winnings = machine.evaluate(result)
-    assert winnings == 1000
+    assert winnings.value == 1000
+
+
+def test_free_game(basic_game, basic_window, free_game):
+    machine = Machine([basic_game, free_game], basic_window)
+    result = machine.pull_lever()
+    winnings = machine.evaluate(result)
+    assert isinstance(result, list) and isinstance(winnings, Reward)
+
+
+def test_free_spin(basic_window, free_spin_game):
+    machine = Machine([free_spin_game], basic_window)
+    result = machine.pull_lever()
+    winnings = machine.evaluate(result)
+    assert isinstance(result, list) and isinstance(winnings, Reward)
+    assert winnings.reward_type == RewardType.SPIN
