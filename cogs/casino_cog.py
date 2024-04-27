@@ -9,6 +9,7 @@ from cogs.games.slots import (
     GameBase,
     Machine,
     Payline,
+    Reward,
     RewardType,
     Symbol,
     Reelstrip,
@@ -16,6 +17,7 @@ from cogs.games.slots import (
 )
 
 EXTRA_REEL_ITEM_ID = 0
+# WINDOW_EXPANSION_ITEM_ID = 1  # TODO
 
 
 @app_commands.guild_only()
@@ -34,7 +36,8 @@ class CasinoCog(commands.Cog):
             window.centerline(),
         ]
         pay_rules = [
-            PayRule([sym] * num_reels, pay) for sym, pay in zip(symbols, payouts)
+            PayRule([sym] * num_reels, Reward(RewardType.MONEY, pay))
+            for sym, pay in zip(symbols, payouts)
         ]
         self.slot_machine = Machine(
             [

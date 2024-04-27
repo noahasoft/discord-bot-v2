@@ -463,9 +463,44 @@ def test_free_game(basic_game, basic_window, free_game):
     assert isinstance(result, list) and isinstance(winnings, Reward)
 
 
-def test_free_spin(basic_window, free_spin_game):
+def test_free_spin(symbol_a, basic_window, free_spin_game):
     machine = Machine([free_spin_game], basic_window)
-    result = machine.pull_lever()
+    result = [
+        [symbol_a, symbol_a, symbol_a],
+        [symbol_a, symbol_a, symbol_a],
+        [symbol_a, symbol_a, symbol_a],
+    ]
     winnings = machine.evaluate(result)
     assert isinstance(result, list) and isinstance(winnings, Reward)
     assert winnings.reward_type == RewardType.SPIN
+
+
+def test_add_reel(basic_reelstrip, basic_window, basic_game):
+    machine = Machine([basic_game], basic_window)
+    machine.add_reel(basic_reelstrip)
+    assert len(machine.current_game.reels) == 4
+
+
+def test_expand_window(basic_game, basic_window):
+    machine = Machine([basic_game], basic_window)
+    machine.expand_window(Window([4] * 4))
+    assert machine.window.cols == 4
+    assert machine.window.rows_per_column == [4] * 4
+    # Test a spin
+    result = machine.pull_lever()
+    assert len(result) == 3  # We didn't add a reel yet, just expanded the window
+    winnings = machine.evaluate(result)
+    assert isinstance(result, list) and isinstance(winnings, Reward)
+
+
+def test_expand_both(basic_game, basic_window, basic_reelstrip):
+    machine = Machine([basic_game], basic_window)
+    machine.expand_window(Window([4] * 4))
+    machine.add_reel(basic_reelstrip)
+    assert machine.window.cols == 4
+    assert machine.window.rows_per_column == [4] * 4
+    # Test a spin
+    result = machine.pull_lever()
+    assert len(result) == 4  # We didn't add a reel yet, just expanded the window
+    winnings = machine.evaluate(result)
+    assert isinstance(result, list) and isinstance(winnings, Reward)

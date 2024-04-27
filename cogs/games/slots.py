@@ -165,7 +165,9 @@ class Payline:
 
     def adapt(self, reel: "Reelstrip") -> None:
         """Adapt the payline to the reelstrip by extending the indices"""
-        self.indices.append(self.indices[-1])
+        if len(self.indices) < len(reel.symbols):
+            for _ in range(len(reel.symbols) - len(self.indices)):
+                self.indices.append(self.indices[-1])
 
 
 class Window:
@@ -199,7 +201,9 @@ class Window:
 
     def adapt(self, reel: "Reelstrip") -> None:
         """Adapt the window to the reelstrip by padding."""
-        self.rows_per_column.append(self.rows_per_column[-1])
+        if len(self.rows_per_column) < len(reel.symbols):
+            for _ in range(len(reel.symbols) - len(self.rows_per_column)):
+                self.rows_per_column.append(self.rows_per_column[-1])
 
     # Convenience methods for creating common paylines
     def centerline(self) -> Payline:
@@ -523,9 +527,6 @@ class Machine:
         for payline in self.current_game.paylines:
             payline.adapt(reel)
 
-    def remove_reel(self):
-        """Remove the last reel from the slot machine."""
-        self.current_game.reels.pop()
-        self.window.rows_per_column.pop()
-        for payline in self.current_game.paylines:
-            payline.indices.pop()
+    def expand_window(self, new: Window):
+        """Expand the window to accommodate more rows per column."""
+        self.window = new

@@ -94,7 +94,7 @@ def payrule_scatter_symbol(scatter_symbol):
 def basic_game(basic_window, basic_reelstrip, basic_payrule):
     return GameBase(
         "Test Game",
-        [basic_window.tl_diag()],
+        [basic_window.topline()],
         [basic_payrule],
         [basic_reelstrip for _ in range(3)],
     )
@@ -104,7 +104,7 @@ def basic_game(basic_window, basic_reelstrip, basic_payrule):
 def free_spin_game(basic_window, basic_reelstrip, payrule_free_spin):
     return GameBase(
         "Free Spin Game",
-        [basic_window.tl_diag()],
+        [basic_window.topline()],
         [payrule_free_spin],
         [basic_reelstrip for _ in range(3)],
     )
@@ -114,7 +114,7 @@ def free_spin_game(basic_window, basic_reelstrip, payrule_free_spin):
 def free_game(basic_window, basic_reelstrip, basic_payrule):
     return GameBase(
         "Free Game",
-        [basic_window.tl_diag()],
+        [basic_window.topline()],
         [basic_payrule],
         [basic_reelstrip for _ in range(3)],
         is_free_game=True,

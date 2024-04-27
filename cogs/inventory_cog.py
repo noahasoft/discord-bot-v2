@@ -132,3 +132,53 @@ class InventoryCog(commands.Cog):
                     item_id, name, cost, properties, description = item
                     response += f"**{item_id}**: {name} | ${cost} | ({properties}) | {description}\n"
         await interaction.response.send_message(response, ephemeral=True)
+
+    # Trading system
+    @app_commands.command()
+    async def gift_item(
+        self,
+        interaction: discord.Interaction,
+        recipient: discord.Member,
+        item_id: int,
+        quantity: int = 1,
+    ):
+        user_id = interaction.user.id
+        recipient_id = recipient.id
+        # Check if the user has the item
+        user_quantity = await self.get_item_quantity(user_id, item_id)
+        if user_quantity < quantity:
+            await interaction.response.send_message(
+                "You do not have enough of that item.", ephemeral=True
+            )
+            return
+
+        # Perform the trade
+        async with aiosqlite.connect("economy.db") as db:
+            # Update the user's inventory
+            await db.execute(
+                "UPDATE inventory SET quantity = quantity - ? WHERE user_id = ? AND item_id = ?",
+                (quantity, user_id, item_id),
+            )
+            # Check if the recipient already owns the item
+            async with db.execute(
+                "SELECT quantity FROM inventory WHERE user_id = ? AND item_id = ?",
+                (recipient_id, item_id),
+            ) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    # Update quantity if already owned
+                    await db.execute(
+                        "UPDATE inventory SET quantity = quantity + ? WHERE user_id = ? AND item_id = ?",
+                        (quantity, recipient_id, item_id),
+                    )
+                else:
+                    # Add new item to recipient's inventory
+                    await db.execute(
+                        "INSERT INTO inventory (user_id, item_id, quantity) VALUES (?, ?, ?)",
+                        (recipient_id, item_id, quantity),
+                    )
+            await db.commit()
+        await interaction.response.send_message(
+            f"Trade successful. {recipient.mention} now owns {quantity} of that item.",
+            ephemeral=True,
+        )
