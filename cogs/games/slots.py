@@ -165,9 +165,7 @@ class Payline:
 
     def adapt(self, reel: "Reelstrip") -> None:
         """Adapt the payline to the reelstrip by extending the indices"""
-        if len(self.indices) < len(reel.symbols):
-            for _ in range(len(reel.symbols) - len(self.indices)):
-                self.indices.append(self.indices[-1])
+        self.indices.append(self.indices[-1])
 
 
 class Window:
@@ -523,7 +521,8 @@ class Machine:
     def add_reel(self, reel: Reelstrip):
         """Add a new reel to the slot machine."""
         self.current_game.reels.append(reel)
-        self.window.adapt(reel)
+        if len(self.current_game.reels) > self.window.cols:
+            self.window.rows_per_column.append(self.window.rows_per_column[-1])
         for payline in self.current_game.paylines:
             payline.adapt(reel)
 

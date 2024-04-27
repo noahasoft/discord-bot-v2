@@ -57,6 +57,7 @@ class CasinoCog(commands.Cog):
         await super().cog_load()
 
     @app_commands.command()
+    @app_commands.checks.cooldown(1, 5, key=lambda i: (i.guild_id, i.user.id))
     async def slots(self, interaction: discord.Interaction):
         """Play the slots."""
         balance = await self.economy_cog.get_balance(interaction.user.id)
@@ -105,6 +106,16 @@ class CasinoCog(commands.Cog):
             await interaction.response.send_message(
                 f"{response}\nBetter luck next time! You lost ${self.slot_cost:,.2f}."
             )
+
+    @slots.error
+    async def slots_error(self, interaction: discord.Interaction, error: Exception):
+        if isinstance(error, app_commands.errors.CommandOnCooldown):
+            await interaction.response.send_message(
+                f"Slot is on cooldown. Try again in {error.retry_after:.2f} seconds.",
+                ephemeral=True,
+            )
+        else:
+            raise error
 
     @staticmethod
     def render_payline_ascii(payline: Payline, window: Window):
