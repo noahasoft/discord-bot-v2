@@ -120,3 +120,38 @@ class EconomyCog(commands.Cog):
                 (user_id, -amount, description),
             )
             await db.commit()
+
+    @app_commands.command()
+    async def show_economy_stats(
+        self,
+        interaction: discord.Interaction,
+        ephemeral: bool = True,
+        all_server: bool = False,
+    ):
+        """Show the economic statistics for the slot machine."""
+        user_id = interaction.user.id
+        query = (
+            "SELECT SUM(CASE WHEN value > 0 THEN value ELSE 0 END) AS income,"
+            " SUM(CASE WHEN value < 0 THEN value ELSE 0 END) AS expenses"
+            " FROM transactions " + ("WHERE user_id = ?" if not all_server else "")
+        )
+        params = (user_id,) if not all_server else ()
+
+        async with aiosqlite.connect("economy.db") as db:
+            cursor = await db.execute(query, params)
+            stats_row = await cursor.fetchone()
+
+            if stats_row is None:
+                income = 0
+                expenses = 0
+            else:
+                income, expenses = stats_row
+
+        await interaction.response.send_message(
+            f"**{interaction.user.name if not all_server else 'Total'} Economy Stats**"
+            f"\n----------------"
+            f"\n**Income**: ${income:,.2f}"
+            f"\n**Expenses**: ${expenses:,.2f}"
+            f"\n**Net**: ${income + expenses:,.2f}",
+            ephemeral=ephemeral,
+        )
