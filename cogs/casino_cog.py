@@ -205,7 +205,7 @@ class CasinoCog(commands.Cog):
             f"\n**Winnings**: ${winnings:,.2f}"
             f"\n**Losses**: ${losses:,.2f}"
             f"\n**Net**: ${winnings + losses:,.2f}"
-            f"\n**Games Played**: {winnings_count + losses_count}"
+            f"\n**Games Played**: {winnings_count + losses_count:,}"
             f"\n**Average Winnings**: ${avg_winnings:,.2f}"
             f"\n**Win Rate**: {(winnings_count / (winnings_count + losses_count)) * 100:,.2f}%",
             ephemeral=ephemeral,

@@ -112,7 +112,7 @@ class InventoryCog(commands.Cog):
 
         response = "Your Inventory:\n"
         for item_name, quantity in inventory:
-            response += f"{item_name}: {quantity}\n"
+            response += f"{item_name}: {quantity:,}\n"
         await interaction.response.send_message(response, ephemeral=True)
 
     @app_commands.command()
@@ -130,7 +130,7 @@ class InventoryCog(commands.Cog):
                 items = await cursor.fetchall()
                 for item in items:
                     item_id, name, cost, properties, description = item
-                    response += f"**{item_id}**: {name} | ${cost} | ({properties}) | {description}\n"
+                    response += f"**{item_id}**: {name} | ${cost:,.2f} | ({properties}) | {description}\n"
         await interaction.response.send_message(response, ephemeral=True)
 
     # Trading system
@@ -179,6 +179,6 @@ class InventoryCog(commands.Cog):
                     )
             await db.commit()
         await interaction.response.send_message(
-            f"Trade successful. {recipient.mention} now owns {quantity} of that item.",
+            f"Trade successful. {recipient.mention} now owns {quantity:,} of that item.",
             ephemeral=True,
         )
