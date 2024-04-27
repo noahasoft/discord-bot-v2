@@ -97,14 +97,16 @@ class CasinoCog(commands.Cog):
                 interaction.user.id, winnings, "slot winnings"
             )
             await interaction.response.send_message(
-                f"{response}\nCongratulations! You won ${winnings:,.2f}!"
+                f"{response}\nCongratulations! You won ${winnings:,.2f}!",
+                ephemeral=True,
             )
         else:
             await self.economy_cog.withdraw_money(
                 interaction.user.id, self.slot_cost, "slot cost"
             )
             await interaction.response.send_message(
-                f"{response}\nBetter luck next time! You lost ${self.slot_cost:,.2f}."
+                f"{response}\nBetter luck next time! You lost ${self.slot_cost:,.2f}.",
+                ephemeral=True,
             )
 
     @slots.error
