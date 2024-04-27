@@ -93,14 +93,14 @@ class CasinoCog(commands.Cog):
                 interaction.user.id, winnings, "slot winnings"
             )
             await interaction.response.send_message(
-                f"{response}\nCongratulations! You won ${winnings:.2f}!"
+                f"{response}\nCongratulations! You won ${winnings:,.2f}!"
             )
         else:
             await self.economy_cog.withdraw_money(
                 interaction.user.id, self.slot_cost, "slot cost"
             )
             await interaction.response.send_message(
-                f"{response}\nBetter luck next time! You lost ${self.slot_cost:.2f}."
+                f"{response}\nBetter luck next time! You lost ${self.slot_cost:,.2f}."
             )
 
     @staticmethod
@@ -142,12 +142,12 @@ class CasinoCog(commands.Cog):
     @app_commands.command()
     async def show_rules(self, interaction: discord.Interaction):
         """Show the rules and payouts for the slot machine."""
-        response = f"**Cost per play**: ${self.slot_cost:.2f}\n\n"
+        response = f"**Cost per play**: ${self.slot_cost:,.2f}\n\n"
         response += "**Pay Rules**:\n"
         for game in self.slot_machine.games:
             response += f"*Game {game.name}*\n"
             for rule in game.pay_rules:
-                response += f"{''.join(list(map(str, rule.symbol_pattern)))} --- ${rule.reward.value:.2f}\n"
+                response += f"{''.join(list(map(str, rule.symbol_pattern)))} --- ${rule.reward.value:,.2f}\n"
             response += "\n**Paylines**:\n"
             # render all paylines to string
             for payline in game.paylines:
@@ -199,12 +199,12 @@ class CasinoCog(commands.Cog):
         await interaction.response.send_message(
             f"**{interaction.user.name if not all_server else 'Total'} Slot Stats**"
             f"\n----------------"
-            f"\n**Winnings**: ${winnings:.2f}"
-            f"\n**Losses**: ${losses:.2f}"
-            f"\n**Net**: ${winnings + losses:.2f}"
+            f"\n**Winnings**: ${winnings:,.2f}"
+            f"\n**Losses**: ${losses:,.2f}"
+            f"\n**Net**: ${winnings + losses:,.2f}"
             f"\n**Games Played**: {winnings_count + losses_count}"
-            f"\n**Average Winnings**: ${avg_winnings:.2f}"
-            f"\n**Win Rate**: {(winnings_count / (winnings_count + losses_count)) * 100:.2f}%",
+            f"\n**Average Winnings**: ${avg_winnings:,.2f}"
+            f"\n**Win Rate**: {(winnings_count / (winnings_count + losses_count)) * 100:,.2f}%",
             ephemeral=ephemeral,
         )
 

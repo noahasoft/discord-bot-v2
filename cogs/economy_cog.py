@@ -28,7 +28,7 @@ class EconomyCog(commands.Cog):
         """Prints the user's balance."""
         balance = await self.get_balance(interaction.user.id)
         await interaction.response.send_message(
-            f"Balance: ${balance:.2f}", ephemeral=True
+            f"Balance: ${balance:,.2f}", ephemeral=True
         )
 
     @app_commands.command()
@@ -42,7 +42,7 @@ class EconomyCog(commands.Cog):
                 for row in await cursor.fetchall():
                     user = self.bot.get_user(row[0])
                     response += (
-                        f"`{user.name if user else str(row[0])}`: ${row[1]:.2f}\n"
+                        f"`{user.name if user else str(row[0])}`: ${row[1]:,.2f}\n"
                     )
                 await interaction.response.send_message(response, ephemeral=True)
 
