@@ -186,7 +186,7 @@ class Window:
         return f"Window(rows_per_column={self.rows_per_column})"
 
     @property
-    def cols(self) -> int:
+    def wheels(self) -> int:
         return len(self.rows_per_column)
 
     @property
@@ -208,7 +208,7 @@ class Window:
         return Payline([rows // 2 for rows in self.rows_per_column])
 
     def topline(self) -> Payline:
-        return Payline([0] * self.cols)
+        return Payline([0] * self.wheels)
 
     def bottomline(self) -> Payline:
         return Payline([rows - 1 for rows in self.rows_per_column])
@@ -405,7 +405,7 @@ class Machine:
 
     @staticmethod
     def validate_game_window(window: Window, game: GameBase) -> None:
-        if len(game.reels) != window.cols:
+        if len(game.reels) != window.wheels:
             raise ValueError("Invalid number of reels.")
         for payline in game.paylines:
             if any(
@@ -521,7 +521,7 @@ class Machine:
     def add_reel(self, reel: Reelstrip):
         """Add a new reel to the slot machine."""
         self.current_game.reels.append(reel)
-        if len(self.current_game.reels) > self.window.cols:
+        if len(self.current_game.reels) > self.window.wheels:
             self.window.rows_per_column.append(self.window.rows_per_column[-1])
         for payline in self.current_game.paylines:
             payline.adapt(reel)

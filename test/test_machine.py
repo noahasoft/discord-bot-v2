@@ -12,11 +12,11 @@ from cogs.games.slots import (
 )
 
 
-@pytest.mark.parametrize("rows, cols", [(3, 5), (1, 3)])
-def test_window_initialization(rows, cols):
-    window = Window([rows] * cols)
-    assert window.rows_per_column == [rows] * cols
-    assert window.cols == cols
+@pytest.mark.parametrize("rows, wheels", [(3, 5), (1, 3)])
+def test_window_initialization(rows, wheels):
+    window = Window([rows] * wheels)
+    assert window.rows_per_column == [rows] * wheels
+    assert window.wheels == wheels
 
 
 def test_machine_initialization(basic_game, basic_window):
@@ -484,7 +484,7 @@ def test_add_reel(basic_reelstrip, basic_window, basic_game):
 def test_expand_window(basic_game, basic_window):
     machine = Machine([basic_game], basic_window)
     machine.expand_window(Window([4] * 4))
-    assert machine.window.cols == 4
+    assert machine.window.wheels == 4
     assert machine.window.rows_per_column == [4] * 4
     # Test a spin
     result = machine.pull_lever()
@@ -497,7 +497,7 @@ def test_expand_both(basic_game, basic_window, basic_reelstrip):
     machine = Machine([basic_game], basic_window)
     machine.expand_window(Window([4] * 4))
     machine.add_reel(basic_reelstrip)
-    assert machine.window.cols == 4
+    assert machine.window.wheels == 4
     assert machine.window.rows_per_column == [4] * 4
     # Test a spin
     result = machine.pull_lever()

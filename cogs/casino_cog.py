@@ -122,14 +122,15 @@ class CasinoCog(commands.Cog):
     @staticmethod
     def render_payline_ascii(payline: Payline, window: Window):
         art = [
-            [" " for _ in range(window.rows_per_column[c])] for c in range(window.cols)
+            [" " for _ in range(window.rows_per_column[c])]
+            for c in range(window.wheels)
         ]
 
         for i in range(len(payline.indices) - 1):
             start_row = payline.indices[i]
             end_row = payline.indices[i + 1]
             if start_row == end_row:
-                art[start_row] = ["―" for _ in range(window.cols)]
+                art[start_row] = ["―" for _ in range(window.wheels)]
             elif start_row < end_row:
                 step = 1
                 slope_char = "╲"
@@ -139,18 +140,18 @@ class CasinoCog(commands.Cog):
 
             # Draw the slope between start_row and end_row
             if start_row != end_row:
-                col_step = (window.cols - 1) // (abs(end_row - start_row))
+                col_step = (window.wheels - 1) // (abs(end_row - start_row))
                 for offset, row in enumerate(range(start_row, end_row + step, step)):
                     if (
                         0 <= row < window.rows_per_column[row]
-                        and 0 <= offset * col_step < window.cols
+                        and 0 <= offset * col_step < window.wheels
                     ):
                         art[row][offset * col_step] = slope_char
 
         # Handle the case when there is only one index or last index with a horizontal line
         if len(payline.indices) == 1 or payline.indices[-2] != payline.indices[-1]:
             last_row = payline.indices[-1]
-            art[last_row] = ["―" for _ in range(window.cols)]
+            art[last_row] = ["―" for _ in range(window.wheels)]
 
         # Convert each row of the art to a string and join them with newlines
         return "\n".join("".join(row) for row in art)
