@@ -102,6 +102,22 @@ class InventoryCog(commands.Cog):
                 result = await cursor.fetchone()
                 return result[0] if result else 0
 
+    async def get_item_properties(
+        self, user_id: int, item_id: int
+    ) -> list[tuple[int, dict]]:
+        async with aiosqlite.connect("economy.db") as db:
+            async with db.execute(
+                "SELECT inventory.quantity, items.properties FROM inventory "
+                "JOIN items ON inventory.item_id = items.item_id "
+                "WHERE inventory.user_id = ? AND inventory.item_id = ?",
+                (user_id, item_id),
+            ) as cursor:
+                results = await cursor.fetchall()
+                return [
+                    (r[0], json.loads(r[1].replace("'", '"')) if r[1] else {})
+                    for r in results
+                ]
+
     @app_commands.command()
     async def show_inventory(self, interaction: discord.Interaction):
         user_id = interaction.user.id

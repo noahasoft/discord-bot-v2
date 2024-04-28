@@ -526,6 +526,14 @@ class Machine:
         for payline in self.current_game.paylines:
             payline.adapt(reel)
 
-    def expand_window(self, new: Window):
+    def set_window(self, new: Window):
         """Expand the window to accommodate more rows per column."""
         self.window = new
+
+    def expand_window(self, d_rows: int, d_wheels: int):
+        """Expand the window to accommodate more rows per column."""
+        self.window.rows_per_column = [
+            rows + d_rows for rows in self.window.rows_per_column
+        ]
+        for _ in range(d_wheels):
+            self.window.rows_per_column.append(self.window.rows_per_column[-1])

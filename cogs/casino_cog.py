@@ -17,7 +17,7 @@ from cogs.games.slots import (
 )
 
 EXTRA_REEL_ITEM_ID = 0
-# WINDOW_EXPANSION_ITEM_ID = 1  # TODO
+WINDOW_EXPANSION_ITEM_ID = 1
 
 
 @app_commands.guild_only()
@@ -70,6 +70,12 @@ class CasinoCog(commands.Cog):
         )
         for _ in range(extra_reels):
             machine.add_reel(self.base_reelstrip.copy())
+        window_expansions = await self.inventory_cog.get_item_properties(
+            interaction.user.id, WINDOW_EXPANSION_ITEM_ID
+        )
+        for count, properties in window_expansions:
+            for _ in range(count):
+                machine.expand_window(properties["rows"], properties["wheels"])
         spins = 1
         winnings = 0.0
         while spins > 0:
@@ -227,15 +233,26 @@ class CasinoCog(commands.Cog):
 
     async def add_slot_items(self):
         """Build slot machine inventory items in the database."""
+        items = [
+            (
+                EXTRA_REEL_ITEM_ID,
+                "Additional Reel",
+                10_000,
+                str({}),
+                "Adds an additional reel to the slot machine.",
+            ),
+            (
+                WINDOW_EXPANSION_ITEM_ID,
+                "Window Expansion",
+                50_000,
+                str({"rows": 1, "wheels": 1}),
+                "Expands the window of the slot machine by 1 each.",
+            ),
+        ]
         async with aiosqlite.connect("economy.db") as db:
-            await db.execute(
-                "INSERT OR IGNORE INTO items (item_id, name, cost, properties, description) VALUES (?, ?, ?, ?, ?)",
-                (
-                    EXTRA_REEL_ITEM_ID,
-                    "Additional Reel",
-                    10_000,
-                    str({}),
-                    "Adds an additional reel to the slot machine.",
-                ),
-            )
+            for i in items:
+                await db.execute(
+                    "INSERT OR IGNORE INTO items (item_id, name, cost, properties, description) VALUES (?, ?, ?, ?, ?)",
+                    i,
+                )
             await db.commit()
