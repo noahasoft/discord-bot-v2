@@ -1,3 +1,4 @@
+from typing import List
 import aiosqlite
 import discord
 from discord import app_commands
@@ -64,34 +65,16 @@ class CasinoCog(commands.Cog):
         if balance < self.slot_cost:
             await interaction.response.send_message("Insufficient balance.")
             return
-        machine = deepcopy(self.slot_machine)
-        extra_reels = await self.inventory_cog.get_item_quantity(
-            interaction.user.id, EXTRA_REEL_ITEM_ID
-        )
-        for _ in range(extra_reels):
-            machine.add_reel(self.base_reelstrip.copy())
-        window_expansions = await self.inventory_cog.get_item_properties(
-            interaction.user.id, WINDOW_EXPANSION_ITEM_ID
-        )
-        for count, properties in window_expansions:
-            for _ in range(count):
-                machine.expand_window(properties["rows"], properties["wheels"])
+
+        machine = await self.prepare_slot_machine(interaction.user.id)
         spins = 1
         winnings = 0.0
+
         while spins > 0:
             result = machine.pull_lever()
             reward = machine.evaluate(result)
-            response = ""
-            for row in range(machine.window.max_rows):
-                for (widx, wheel) in enumerate(result):
-                    if machine.is_on_scoreline(widx, row):
-                        response += "**" + wheel[row].name + "** "
-                    else:
-                        response += wheel[row].name + " "
-                # Can only signify linear paylines for now
-                if machine.is_on_scoreline(0, row):
-                    response += " <<<"
-                response += "\n"
+            response = self.generate_slot_response(machine, result)
+
             if reward.reward_type == RewardType.SPIN:
                 spins += int(reward.value)
             if reward.reward_type == RewardType.MONEY:
@@ -114,6 +97,35 @@ class CasinoCog(commands.Cog):
                 f"{response}\nBetter luck next time! You lost ${self.slot_cost:,.2f}.",
                 ephemeral=True,
             )
+
+    async def prepare_slot_machine(self, user_id: int) -> Machine:
+        machine = deepcopy(self.slot_machine)
+        extra_reels = await self.inventory_cog.get_item_quantity(
+            user_id, EXTRA_REEL_ITEM_ID
+        )
+        for _ in range(extra_reels):
+            machine.add_reel(self.base_reelstrip.copy())
+        window_expansions = await self.inventory_cog.get_item_properties(
+            user_id, WINDOW_EXPANSION_ITEM_ID
+        )
+        for count, properties in window_expansions:
+            for _ in range(count):
+                machine.expand_window(properties["rows"], properties["wheels"])
+        return machine
+
+    @staticmethod
+    def generate_slot_response(machine: Machine, result: List[List[Symbol]]) -> str:
+        response = ""
+        for row in range(machine.window.max_rows):
+            for (widx, wheel) in enumerate(result):
+                if machine.is_on_scoreline(widx, row):
+                    response += "**" + wheel[row].name + "** "
+                else:
+                    response += wheel[row].name + " "
+            if machine.is_on_scoreline(0, row):
+                response += " <<<"
+            response += "\n"
+        return response
 
     @slots.error
     async def slots_error(self, interaction: discord.Interaction, error: Exception):
