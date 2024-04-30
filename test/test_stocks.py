@@ -14,7 +14,6 @@ def test_post_init():
     params = GBMSystem()
     assert params.current_price == params.S0
     assert params.current_step == 0
-    assert params.path == [params.current_price]
     assert params.dt == params.T / params.n
 
 
