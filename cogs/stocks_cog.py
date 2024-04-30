@@ -259,6 +259,6 @@ class StocksCog(commands.Cog):
         embed = discord.Embed(title="Portfolio", color=discord.Color.blurple())
         for name, symbol, quantity, price in stocks:
             embed.add_field(
-                name=symbol, value=f"{name}: {quantity} {price:,.2f}", inline=True
+                name=symbol, value=f"{name}: {quantity} | ${price:,.2f}", inline=True
             )
         await interaction.response.send_message(embed=embed)
