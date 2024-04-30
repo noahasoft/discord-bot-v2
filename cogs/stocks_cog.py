@@ -204,6 +204,11 @@ class StocksCog(commands.Cog):
             await interaction.response.send_message("Stock not found", ephemeral=True)
             return
         price = stock.price * amount
+        if self.economy_cog.get_balance(interaction.user.id) < price:
+            await interaction.response.send_message(
+                "You don't have enough money to buy this stock", ephemeral=True
+            )
+            return
         await self.economy_cog.withdraw_money(interaction.user.id, price)
         await self.give_stock(interaction.user, stock, amount)
         await interaction.response.send_message(
@@ -243,7 +248,7 @@ class StocksCog(commands.Cog):
         async with aiosqlite.connect("stocks.db") as db:
             async with db.execute(
                 """
-                SELECT stocks.name, stocks.symbol, portfolio.quantity
+                SELECT stocks.name, stocks.symbol, portfolio.quantity, stocks.price
                 FROM portfolio
                 JOIN stocks ON portfolio.stock_symbol = stocks.symbol
                 WHERE user_id = ?
@@ -252,6 +257,8 @@ class StocksCog(commands.Cog):
             ) as cursor:
                 stocks = await cursor.fetchall()
         embed = discord.Embed(title="Portfolio", color=discord.Color.blurple())
-        for name, symbol, quantity in stocks:
-            embed.add_field(name=symbol, value=f"{name}: {quantity}", inline=True)
+        for name, symbol, quantity, price in stocks:
+            embed.add_field(
+                name=symbol, value=f"{name}: {quantity} {price:,.2f}", inline=True
+            )
         await interaction.response.send_message(embed=embed)
