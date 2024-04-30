@@ -53,6 +53,7 @@ class GBMSystem:
             self.current_step += 1
         return self.current_price
 
+
 class Stock:
     def __init__(self, name: str, params: GBMSystem, symbol: Optional[str] = None):
         self.name = name

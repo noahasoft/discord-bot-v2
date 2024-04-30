@@ -36,6 +36,9 @@ class InventoryCog(commands.Cog):
             await db.commit()
 
     async def purchase_item(self, user_id: int, item_id: int):
+        """
+        Buy an item from the shop with the given item ID.
+        """
         # Check if the user has enough balance
         cost = await self.get_item_cost(item_id)
         balance = await self.economy_cog.get_balance(user_id)
@@ -120,6 +123,9 @@ class InventoryCog(commands.Cog):
 
     @app_commands.command()
     async def show_inventory(self, interaction: discord.Interaction):
+        """
+        List the items in the user's inventory.
+        """
         user_id = interaction.user.id
         inventory = await self.get_inventory(user_id)
         if not inventory:
@@ -133,12 +139,18 @@ class InventoryCog(commands.Cog):
 
     @app_commands.command()
     async def buy_item(self, interaction: discord.Interaction, item_id: int):
+        """
+        Buy an item from the shop with the given item ID.
+        """
         user_id = interaction.user.id
         response = await self.purchase_item(user_id, item_id)
         await interaction.response.send_message(response, ephemeral=True)
 
     @app_commands.command()
     async def list_shop(self, interaction: discord.Interaction):
+        """
+        List the items available for purchase, along with their IDs.
+        """
         response = "Items:\n"
         response += "ID: Name | Cost | Properties | Description\n"
         async with aiosqlite.connect("economy.db") as db:
@@ -158,6 +170,9 @@ class InventoryCog(commands.Cog):
         item_id: int,
         quantity: int = 1,
     ):
+        """
+        Gift an item to another user.
+        """
         user_id = interaction.user.id
         recipient_id = recipient.id
         # Check if the user has the item
