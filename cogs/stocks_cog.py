@@ -180,16 +180,17 @@ class StocksCog(commands.Cog):
             await self.update_stock_price(stock.symbol, new_price)
 
     @app_commands.command()
-    async def list_stocks(self, interaction: discord.Interaction) -> None:
+    async def list_stocks(
+        self, interaction: discord.Interaction, long_names: bool = False
+    ) -> None:
         """
         Show a list of all available stocks and their prices.
         """
         stocks = await self.get_all_stocks()
         embed = discord.Embed(title="Stocks", color=discord.Color.blurple())
         for stock in stocks:
-            embed.add_field(
-                name=stock.symbol, value=f"${stock.price:,.2f}", inline=True
-            )
+            name = f"{stock.name}(**{stock.symbol}**)" if long_names else stock.symbol
+            embed.add_field(name=name, value=f"${stock.price:,.2f}", inline=True)
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command()
