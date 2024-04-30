@@ -8,6 +8,7 @@ from cogs.economy_cog import EconomyCog
 from cogs.inventory_cog import InventoryCog
 from cogs.joined_cog import JoinedCog
 from cogs.role_cog import RoleCog
+from cogs.stocks_cog import StocksCog
 from cogs.utilities_cog import UtilitiesCog
 from cogs.voice_cog import VoiceCog
 from cogs.whitelist_cog import WhitelistCog
@@ -34,6 +35,7 @@ class MyBot(commands.Bot):
         await self.add_cog(EconomyCog(self))
         await self.add_cog(InventoryCog(self))
         await self.add_cog(CasinoCog(self))
+        await self.add_cog(StocksCog(self))
         await self.add_cog(UtilitiesCog(self))
         self.tree.copy_global_to(guild=MY_GUILD)
         await self.tree.sync(guild=MY_GUILD)
