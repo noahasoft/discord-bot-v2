@@ -204,7 +204,7 @@ class StocksCog(commands.Cog):
             await interaction.response.send_message("Stock not found", ephemeral=True)
             return
         price = stock.price * amount
-        if self.economy_cog.get_balance(interaction.user.id) < price:
+        if await self.economy_cog.get_balance(interaction.user.id) < price:
             await interaction.response.send_message(
                 "You don't have enough money to buy this stock", ephemeral=True
             )
