@@ -38,12 +38,11 @@ class GBMSystem:
             raise ValueError("S0 must be positive")
         self.current_price = self.S0
         self.current_step = 0
-        self.path = [self.current_price]
         self.dt = self.T / self.n  # time step size
 
     def get_next(self) -> float:
         """
-        Generate the next stock price using GBM and append it to the path.
+        Generate the next stock price using GBM.
         """
         if self.current_step < self.n:
             normal_sample = random.gauss(0, math.sqrt(self.dt))
@@ -51,16 +50,8 @@ class GBMSystem:
                 self.mu - self.sigma**2 / 2
             ) * self.dt + self.sigma * normal_sample
             self.current_price *= math.exp(value)
-            self.path.append(self.current_price)
             self.current_step += 1
         return self.current_price
-
-    def time_intervals(self) -> list[float]:
-        """
-        Return the time intervals corresponding to the simulation steps.
-        """
-        return [i * self.dt for i in range(len(self.path))]
-
 
 class Stock:
     def __init__(self, name: str, params: GBMSystem, symbol: Optional[str] = None):

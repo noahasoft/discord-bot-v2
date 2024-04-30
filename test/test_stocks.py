@@ -10,12 +10,6 @@ def test_get_next():
     assert next_price == params.current_price
 
 
-def test_time_intervals():
-    params = GBMSystem()
-    intervals = params.time_intervals()
-    assert intervals[0] == 0
-
-
 def test_post_init():
     params = GBMSystem()
     assert params.current_price == params.S0
