@@ -19,6 +19,7 @@ class StocksCog(commands.Cog):
     async def cog_load(self) -> None:
         await self.create_stocks_table()
         await self.create_portfolio_table()
+        await self.create_history_table()
         await self.add_initial_stocks()
         self.update_stock_prices.start()
         await super().cog_load()
@@ -49,6 +50,22 @@ class StocksCog(commands.Cog):
                     stock_symbol TEXT NOT NULL,
                     quantity INTEGER NOT NULL DEFAULT 1,
                     PRIMARY KEY (user_id, stock_symbol),
+                    FOREIGN KEY (stock_symbol) REFERENCES stocks(symbol)
+                )
+                """
+            )
+            await db.commit()
+
+    async def create_history_table(self) -> None:
+        async with aiosqlite.connect("stocks.db") as db:
+            await db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS history (
+                    stock_symbol TEXT NOT NULL,
+                    date TEXT NOT NULL DEFAULT (date('now')),
+                    high REAL,
+                    low REAL,
+                    PRIMARY KEY (stock_symbol, date),
                     FOREIGN KEY (stock_symbol) REFERENCES stocks(symbol)
                 )
                 """
@@ -133,10 +150,25 @@ class StocksCog(commands.Cog):
             async with db.execute("SELECT * FROM stocks") as cursor:
                 return [Stock.from_row(row) async for row in cursor]
 
-    async def update_stock_price(self, symbol: str, price: float) -> None:
+    async def update_stock_price(self, symbol: str, new_price: float) -> None:
         async with aiosqlite.connect("stocks.db") as db:
             await db.execute(
-                "UPDATE stocks SET price = ? WHERE symbol = ?", (price, symbol)
+                "UPDATE stocks SET price = ? WHERE symbol = ?", (new_price, symbol)
+            )
+            await db.commit()
+
+    async def update_stock_history(self, symbol: str, new_price: float) -> None:
+        async with aiosqlite.connect("stocks.db") as db:
+            await db.execute(
+                """
+                INSERT INTO history (stock_symbol, high, low, date)
+                VALUES (?, ?, ?, date('now'))
+                ON CONFLICT(stock_symbol, date)
+                DO UPDATE SET 
+                    high = MAX(excluded.high, history.high),
+                    low = MIN(excluded.low, history.low)
+                """,
+                (symbol, new_price, new_price),
             )
             await db.commit()
 
@@ -178,6 +210,7 @@ class StocksCog(commands.Cog):
             # Simulate a stock price change
             new_price = stock.get_next()
             await self.update_stock_price(stock.symbol, new_price)
+            await self.update_stock_history(stock.symbol, new_price)
 
     @app_commands.command()
     async def list_stocks(
@@ -249,17 +282,22 @@ class StocksCog(commands.Cog):
         async with aiosqlite.connect("stocks.db") as db:
             async with db.execute(
                 """
-                SELECT stocks.name, stocks.symbol, portfolio.quantity, stocks.price
+                SELECT stocks.name, stocks.symbol, portfolio.quantity, stocks.price, history.high, history.low 
                 FROM portfolio
                 JOIN stocks ON portfolio.stock_symbol = stocks.symbol
+                JOIN history ON stocks.symbol = history.stock_symbol AND history.date = date('now')
                 WHERE user_id = ?
                 """,
                 (user_id,),
             ) as cursor:
                 stocks = await cursor.fetchall()
         embed = discord.Embed(title="Portfolio", color=discord.Color.blurple())
-        for name, symbol, quantity, price in stocks:
+        for name, symbol, quantity, price, high, low in stocks:
+            high = high or price
+            low = low or price
             embed.add_field(
-                name=symbol, value=f"{name}: {quantity} | ${price:,.2f}", inline=True
+                name=symbol,
+                value=f"{name}: {quantity} shares * ${price:,.2f} = ${price*quantity:,.2f} | High: ${high:,.2f} Low: ${low:,.2f}",
+                inline=True,
             )
         await interaction.response.send_message(embed=embed)
