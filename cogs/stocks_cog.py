@@ -286,7 +286,7 @@ class StocksCog(commands.Cog):
                 FROM portfolio
                 JOIN stocks ON portfolio.stock_symbol = stocks.symbol
                 JOIN history ON stocks.symbol = history.stock_symbol AND history.date = date('now')
-                WHERE user_id = ?
+                WHERE user_id = ? AND portfolio.quantity > 0
                 """,
                 (user_id,),
             ) as cursor:
