@@ -86,3 +86,27 @@ class Stock:
     @property
     def price(self) -> float:
         return self.params.current_price
+
+
+class Market:
+    def __init__(self) -> None:
+        self.stocks: dict[str, Stock] = {}
+
+    @classmethod
+    def init_from_stocks(cls, stocks: list[Stock]) -> "Market":
+        market = cls()
+        for stock in stocks:
+            market.stocks[stock.symbol] = stock
+        return market
+
+    def get_stock(self, symbol: str) -> Stock:
+        return self.stocks[symbol]
+
+    def get_stock_price(self, symbol: str) -> float:
+        return self.get_stock(symbol).price
+
+    def get_stock_names(self) -> list[str]:
+        return [stock.name for stock in self.stocks.values()]
+
+    def get_stock_symbols(self) -> list[str]:
+        return list(self.stocks.keys())

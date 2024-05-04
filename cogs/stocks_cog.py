@@ -6,6 +6,7 @@ from discord.ext import commands, tasks
 
 from cogs.games.stocks import (
     GBMSystem,
+    Market,
     Stock,
 )
 
@@ -15,6 +16,34 @@ class StocksCog(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot: commands.Bot = bot
         self.economy_cog = self.bot.get_cog("EconomyCog")
+        # fmt: off
+        self.market = Market.init_from_stocks(
+            stocks=
+            [
+                Stock("Apple Inc.", "AAPL", GBMSystem(S0=150, mu=0.0001, sigma=0.01)),
+                Stock("Microsoft Corporation", "MSFT", GBMSystem(S0=200, mu=0.0002, sigma=0.02)),
+                Stock("Google LLC", "GOOGL", GBMSystem(S0=300, mu=0.0003, sigma=0.03)),
+                Stock("Amazon.com Inc.", "AMZN", GBMSystem(S0=400, mu=0.0004, sigma=0.04)),
+                Stock("Meta Platforms Inc.", "META", GBMSystem(S0=500, mu=0.0005, sigma=0.05)),
+                Stock("Tesla Inc.", "TSLA", GBMSystem(S0=600, mu=0.0006, sigma=0.06)),
+                Stock("NVIDIA Corporation", "NVDA", GBMSystem(S0=700, mu=0.0007, sigma=0.07)),
+                Stock("PayPal Holdings Inc.", "PYPL", GBMSystem(S0=800, mu=0.0008, sigma=0.08)),
+                Stock("Netflix Inc.", "NFLX", GBMSystem(S0=900, mu=0.0009, sigma=0.09)),
+                Stock("Adobe Inc.", "ADBE", GBMSystem(S0=1000, mu=0.001, sigma=0.1)),
+                Stock("Salesforce.com Inc.", "CRM", GBMSystem(S0=1100, mu=0.0011, sigma=0.11)),
+                Stock("Zoom Video Communications Inc.", "ZM", GBMSystem(S0=1200, mu=0.0012, sigma=0.12)),
+                Stock("Shopify Inc.", "SHOP", GBMSystem(S0=1300, mu=0.0013, sigma=0.13)),
+                Stock("Spotify Technology S.A.", "SPOT", GBMSystem(S0=1400, mu=0.0014, sigma=0.14)),
+                Stock("Square Inc.", "SQ", GBMSystem(S0=1500, mu=0.0015, sigma=0.15)),
+                Stock("Roblox Corporation", "RBLX", GBMSystem(S0=1600, mu=0.0016, sigma=0.16)),
+                Stock("Airbnb Inc.", "ABNB", GBMSystem(S0=1700, mu=0.0017, sigma=0.17)),
+                Stock("DoorDash Inc.", "DASH", GBMSystem(S0=1800, mu=0.0018, sigma=0.18)),
+                Stock("Coinbase Global Inc.", "COIN", GBMSystem(S0=1900, mu=0.0019, sigma=0.19)),
+                Stock("Pinterest Inc.", "PINS", GBMSystem(S0=2000, mu=0.002, sigma=0.2)),
+                Stock("Palantir Technologies Inc.", "PLTR", GBMSystem(S0=2100, mu=0.0021, sigma=0.21)),
+            ]
+        )
+        # fmt: on
 
     async def cog_load(self) -> None:
         await self.create_stocks_table()
@@ -73,33 +102,8 @@ class StocksCog(commands.Cog):
             await db.commit()
 
     async def add_initial_stocks(self) -> None:
-        # fmt: off
-        stocks = [
-            Stock("Apple Inc.", "AAPL", GBMSystem(S0=150, mu=0.0001, sigma=0.01)),
-            Stock("Microsoft Corporation", "MSFT", GBMSystem(S0=200, mu=0.0002, sigma=0.02)),
-            Stock("Google LLC", "GOOGL", GBMSystem(S0=300, mu=0.0003, sigma=0.03)),
-            Stock("Amazon.com Inc.", "AMZN", GBMSystem(S0=400, mu=0.0004, sigma=0.04)),
-            Stock("Meta Platforms Inc.", "META", GBMSystem(S0=500, mu=0.0005, sigma=0.05)),
-            Stock("Tesla Inc.", "TSLA", GBMSystem(S0=600, mu=0.0006, sigma=0.06)),
-            Stock("NVIDIA Corporation", "NVDA", GBMSystem(S0=700, mu=0.0007, sigma=0.07)),
-            Stock("PayPal Holdings Inc.", "PYPL", GBMSystem(S0=800, mu=0.0008, sigma=0.08)),
-            Stock("Netflix Inc.", "NFLX", GBMSystem(S0=900, mu=0.0009, sigma=0.09)),
-            Stock("Adobe Inc.", "ADBE", GBMSystem(S0=1000, mu=0.001, sigma=0.1)),
-            Stock("Salesforce.com Inc.", "CRM", GBMSystem(S0=1100, mu=0.0011, sigma=0.11)),
-            Stock("Zoom Video Communications Inc.", "ZM", GBMSystem(S0=1200, mu=0.0012, sigma=0.12)),
-            Stock("Shopify Inc.", "SHOP", GBMSystem(S0=1300, mu=0.0013, sigma=0.13)),
-            Stock("Spotify Technology S.A.", "SPOT", GBMSystem(S0=1400, mu=0.0014, sigma=0.14)),
-            Stock("Square Inc.", "SQ", GBMSystem(S0=1500, mu=0.0015, sigma=0.15)),
-            Stock("Roblox Corporation", "RBLX", GBMSystem(S0=1600, mu=0.0016, sigma=0.16)),
-            Stock("Airbnb Inc.", "ABNB", GBMSystem(S0=1700, mu=0.0017, sigma=0.17)),
-            Stock("DoorDash Inc.", "DASH", GBMSystem(S0=1800, mu=0.0018, sigma=0.18)),
-            Stock("Coinbase Global Inc.", "COIN", GBMSystem(S0=1900, mu=0.0019, sigma=0.19)),
-            Stock("Pinterest Inc.", "PINS", GBMSystem(S0=2000, mu=0.002, sigma=0.2)),
-            Stock("Palantir Technologies Inc.", "PLTR", GBMSystem(S0=2100, mu=0.0021, sigma=0.21)),
-        ]
-        # fmt: on
         async with aiosqlite.connect("stocks.db") as db:
-            for stock in stocks:
+            for stock in self.market.stocks.values():
                 await db.execute(
                     "INSERT OR IGNORE INTO stocks (name, symbol, price) VALUES (?, ?, ?)",
                     (stock.name, stock.symbol, stock.price),
