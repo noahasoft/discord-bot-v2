@@ -139,9 +139,7 @@ class StocksCog(commands.Cog):
                         if stock:
                             stocks.append(stock)
                         current_symbol = row[1]
-                        stock = Stock.from_row(
-                            row
-                        )  # Assuming Stock.from_row can initialize with name, symbol, and price
+                        stock = Stock.from_row(row)
                 if stock:
                     stocks.append(stock)
                 return stocks
@@ -199,11 +197,9 @@ class StocksCog(commands.Cog):
                 row = await cursor.fetchone()
                 return row[0] if row else 0
 
-    # Every 5 minutes update the stock prices
     @tasks.loop(minutes=5)
     async def update_stock_prices(self):
         for stock in await self.get_all_stocks():
-            # Simulate a stock price change
             new_price = stock.get_next()
             await self.update_stock_price(stock.symbol, new_price)
             await self.update_stock_history(stock.symbol, new_price)

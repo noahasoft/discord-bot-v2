@@ -184,7 +184,6 @@ class CasinoCog(commands.Cog):
             for rule in game.pay_rules:
                 response += f"{''.join(list(map(str, rule.symbol_pattern)))} --- ${rule.reward.value:,.2f}\n"
             response += "\n**Paylines**:\n"
-            # render all paylines to string
             for payline in game.paylines:
                 response += "```"
                 response += self.render_payline_ascii(payline, self.slot_machine.window)

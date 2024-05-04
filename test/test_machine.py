@@ -486,7 +486,6 @@ def test_set_window(basic_game, basic_window):
     machine.set_window(Window([4] * 4))
     assert machine.window.wheels == 4
     assert machine.window.rows_per_column == [4] * 4
-    # Test a spin
     result = machine.pull_lever()
     assert len(result) == 3  # We didn't add a reel yet, just expanded the window
     winnings = machine.evaluate(result)
@@ -499,7 +498,6 @@ def test_set_both(basic_game, basic_window, basic_reelstrip):
     machine.add_reel(basic_reelstrip)
     assert machine.window.wheels == 4
     assert machine.window.rows_per_column == [4] * 4
-    # Test a spin
     result = machine.pull_lever()
     assert len(result) == 4
     winnings = machine.evaluate(result)
@@ -512,7 +510,6 @@ def test_expand_window(basic_game, basic_window, basic_reelstrip):
     assert machine.window.wheels == 4
     assert machine.window.rows_per_column == [4] * 4
     machine.add_reel(basic_reelstrip)
-    # Test a spin
     result = machine.pull_lever()
     assert len(result) == 4
     winnings = machine.evaluate(result)

@@ -319,7 +319,7 @@ class AnyPayRule:
 
     def _generate_symbol_patterns(self, pattern: list[Symbol], idx: int = 0):
         if idx == len(pattern):
-            return [pattern.copy()]  # Return a copy of the current pattern
+            return [pattern.copy()]
 
         current_symbol = pattern[idx]
         if isinstance(current_symbol, AnySymbol):

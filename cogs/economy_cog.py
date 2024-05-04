@@ -73,7 +73,6 @@ class EconomyCog(commands.Cog):
 
     async def get_registered_users(self):
         async with aiosqlite.connect("economy.db") as db:
-            # Get all unique user IDs from the transactions table
             async with db.execute("SELECT user_id FROM transactions") as cursor:
                 return set([row[0] for row in await cursor.fetchall()])
 

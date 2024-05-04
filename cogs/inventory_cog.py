@@ -39,7 +39,6 @@ class InventoryCog(commands.Cog):
         """
         Buy an item from the shop with the given item ID.
         """
-        # Check if the user has enough balance
         cost = await self.get_item_cost(item_id)
         balance = await self.economy_cog.get_balance(user_id)
         if balance < cost:
@@ -161,7 +160,6 @@ class InventoryCog(commands.Cog):
                     response += f"**{item_id}**: {name} | ${cost:,.2f} | ({properties}) | {description}\n"
         await interaction.response.send_message(response, ephemeral=True)
 
-    # Trading system
     @app_commands.command()
     async def gift_item(
         self,
@@ -175,7 +173,6 @@ class InventoryCog(commands.Cog):
         """
         user_id = interaction.user.id
         recipient_id = recipient.id
-        # Check if the user has the item
         user_quantity = await self.get_item_quantity(user_id, item_id)
         if user_quantity < quantity:
             await interaction.response.send_message(
@@ -183,7 +180,6 @@ class InventoryCog(commands.Cog):
             )
             return
 
-        # Perform the trade
         async with aiosqlite.connect("economy.db") as db:
             # Update the user's inventory
             await db.execute(

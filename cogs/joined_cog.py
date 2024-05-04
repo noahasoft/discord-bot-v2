@@ -21,10 +21,8 @@ class JoinedCog(commands.Cog):
         self, interaction: discord.Interaction, member: Optional[discord.Member] = None
     ):
         """Says when a member joined."""
-        # If no member is explicitly provided then we use the command user here
         member = member or interaction.user
 
-        # The format_dt function formats the date time into a human readable representation in the official client
         await interaction.response.send_message(
             f"{member} joined {discord.utils.format_dt(member.joined_at)}",
             ephemeral=True,
