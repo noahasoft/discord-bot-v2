@@ -1,5 +1,5 @@
 import pytest
-from cogs.games.stocks import GBMSystem
+from cogs.games.stocks import GBMSystem, Stock
 
 
 def test_get_next():
@@ -24,3 +24,11 @@ def test_invalid_parameters():
         GBMSystem(T=-1)
     with pytest.raises(ValueError):
         GBMSystem(n=-1)
+
+
+def test_stock():
+    s = Stock("Apple", "AAPL", GBMSystem(S0=100.0))
+    assert s.price == 100.0
+    assert s.get_next() != 100.0
+    assert s.high != None
+    assert s.low != None

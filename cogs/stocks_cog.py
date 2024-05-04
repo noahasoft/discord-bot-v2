@@ -73,59 +73,31 @@ class StocksCog(commands.Cog):
             await db.commit()
 
     async def add_initial_stocks(self) -> None:
+        # fmt: off
         stocks = [
-            Stock("Apple Inc.", GBMSystem(S0=150, mu=0.0001, sigma=0.01), "AAPL"),
-            Stock(
-                "Microsoft Corporation",
-                GBMSystem(S0=200, mu=0.0002, sigma=0.02),
-                "MSFT",
-            ),
-            Stock("Google LLC", GBMSystem(S0=300, mu=0.0003, sigma=0.03), "GOOGL"),
-            Stock("Amazon.com Inc.", GBMSystem(S0=400, mu=0.0004, sigma=0.04), "AMZN"),
-            Stock(
-                "Meta Platforms Inc.", GBMSystem(S0=500, mu=0.0005, sigma=0.05), "META"
-            ),
-            Stock("Tesla Inc.", GBMSystem(S0=600, mu=0.0006, sigma=0.06), "TSLA"),
-            Stock(
-                "NVIDIA Corporation", GBMSystem(S0=700, mu=0.0007, sigma=0.07), "NVDA"
-            ),
-            Stock(
-                "PayPal Holdings Inc.", GBMSystem(S0=800, mu=0.0008, sigma=0.08), "PYPL"
-            ),
-            Stock("Netflix Inc.", GBMSystem(S0=900, mu=0.0009, sigma=0.09), "NFLX"),
-            Stock("Adobe Inc.", GBMSystem(S0=1000, mu=0.001, sigma=0.1), "ADBE"),
-            Stock(
-                "Salesforce.com Inc.", GBMSystem(S0=1100, mu=0.0011, sigma=0.11), "CRM"
-            ),
-            Stock(
-                "Zoom Video Communications Inc.",
-                GBMSystem(S0=1200, mu=0.0012, sigma=0.12),
-                "ZM",
-            ),
-            Stock("Shopify Inc.", GBMSystem(S0=1300, mu=0.0013, sigma=0.13), "SHOP"),
-            Stock(
-                "Spotify Technology S.A.",
-                GBMSystem(S0=1400, mu=0.0014, sigma=0.14),
-                "SPOT",
-            ),
-            Stock("Square Inc.", GBMSystem(S0=1500, mu=0.0015, sigma=0.15), "SQ"),
-            Stock(
-                "Roblox Corporation", GBMSystem(S0=1600, mu=0.0016, sigma=0.16), "RBLX"
-            ),
-            Stock("Airbnb Inc.", GBMSystem(S0=1700, mu=0.0017, sigma=0.17), "ABNB"),
-            Stock("DoorDash Inc.", GBMSystem(S0=1800, mu=0.0018, sigma=0.18), "DASH"),
-            Stock(
-                "Coinbase Global Inc.",
-                GBMSystem(S0=1900, mu=0.0019, sigma=0.19),
-                "COIN",
-            ),
-            Stock("Pinterest Inc.", GBMSystem(S0=2000, mu=0.002, sigma=0.2), "PINS"),
-            Stock(
-                "Palantir Technologies Inc.",
-                GBMSystem(S0=2100, mu=0.0021, sigma=0.21),
-                "PLTR",
-            ),
+            Stock("Apple Inc.", "AAPL", GBMSystem(S0=150, mu=0.0001, sigma=0.01)),
+            Stock("Microsoft Corporation", "MSFT", GBMSystem(S0=200, mu=0.0002, sigma=0.02)),
+            Stock("Google LLC", "GOOGL", GBMSystem(S0=300, mu=0.0003, sigma=0.03)),
+            Stock("Amazon.com Inc.", "AMZN", GBMSystem(S0=400, mu=0.0004, sigma=0.04)),
+            Stock("Meta Platforms Inc.", "META", GBMSystem(S0=500, mu=0.0005, sigma=0.05)),
+            Stock("Tesla Inc.", "TSLA", GBMSystem(S0=600, mu=0.0006, sigma=0.06)),
+            Stock("NVIDIA Corporation", "NVDA", GBMSystem(S0=700, mu=0.0007, sigma=0.07)),
+            Stock("PayPal Holdings Inc.", "PYPL", GBMSystem(S0=800, mu=0.0008, sigma=0.08)),
+            Stock("Netflix Inc.", "NFLX", GBMSystem(S0=900, mu=0.0009, sigma=0.09)),
+            Stock("Adobe Inc.", "ADBE", GBMSystem(S0=1000, mu=0.001, sigma=0.1)),
+            Stock("Salesforce.com Inc.", "CRM", GBMSystem(S0=1100, mu=0.0011, sigma=0.11)),
+            Stock("Zoom Video Communications Inc.", "ZM", GBMSystem(S0=1200, mu=0.0012, sigma=0.12)),
+            Stock("Shopify Inc.", "SHOP", GBMSystem(S0=1300, mu=0.0013, sigma=0.13)),
+            Stock("Spotify Technology S.A.", "SPOT", GBMSystem(S0=1400, mu=0.0014, sigma=0.14)),
+            Stock("Square Inc.", "SQ", GBMSystem(S0=1500, mu=0.0015, sigma=0.15)),
+            Stock("Roblox Corporation", "RBLX", GBMSystem(S0=1600, mu=0.0016, sigma=0.16)),
+            Stock("Airbnb Inc.", "ABNB", GBMSystem(S0=1700, mu=0.0017, sigma=0.17)),
+            Stock("DoorDash Inc.", "DASH", GBMSystem(S0=1800, mu=0.0018, sigma=0.18)),
+            Stock("Coinbase Global Inc.", "COIN", GBMSystem(S0=1900, mu=0.0019, sigma=0.19)),
+            Stock("Pinterest Inc.", "PINS", GBMSystem(S0=2000, mu=0.002, sigma=0.2)),
+            Stock("Palantir Technologies Inc.", "PLTR", GBMSystem(S0=2100, mu=0.0021, sigma=0.21)),
         ]
+        # fmt: on
         async with aiosqlite.connect("stocks.db") as db:
             for stock in stocks:
                 await db.execute(
@@ -136,19 +108,43 @@ class StocksCog(commands.Cog):
 
     async def get_stock(self, symbol: str) -> Optional[Stock]:
         async with aiosqlite.connect("stocks.db") as db:
-            async with db.execute(
-                "SELECT * FROM stocks WHERE symbol = ?", (symbol,)
-            ) as cursor:
-                row = await cursor.fetchone()
-                if row:
-                    return Stock.from_row(row)
-                else:
-                    return None
+            query = """
+                SELECT s.name, s.symbol, s.price, h.date, h.high, h.low
+                FROM stocks s
+                LEFT JOIN history h ON s.symbol = h.stock_symbol
+                WHERE s.symbol = ?
+                ORDER BY h.date DESC
+            """
+            async with db.execute(query, (symbol,)) as cursor:
+                stock = None
+                async for row in cursor:
+                    if not stock:
+                        stock = Stock.from_row(row)
+                return stock
 
     async def get_all_stocks(self) -> list[Stock]:
         async with aiosqlite.connect("stocks.db") as db:
-            async with db.execute("SELECT * FROM stocks") as cursor:
-                return [Stock.from_row(row) async for row in cursor]
+            query = """
+                SELECT s.name, s.symbol, s.price, h.date, h.high, h.low
+                FROM stocks s
+                LEFT JOIN history h ON s.symbol = h.stock_symbol
+                ORDER BY s.symbol, h.date DESC
+            """
+            async with db.execute(query) as cursor:
+                stocks = []
+                current_symbol = None
+                stock = None
+                async for row in cursor:
+                    if current_symbol != row[1]:
+                        if stock:
+                            stocks.append(stock)
+                        current_symbol = row[1]
+                        stock = Stock.from_row(
+                            row
+                        )  # Assuming Stock.from_row can initialize with name, symbol, and price
+                if stock:
+                    stocks.append(stock)
+                return stocks
 
     async def update_stock_price(self, symbol: str, new_price: float) -> None:
         async with aiosqlite.connect("stocks.db") as db:
@@ -220,10 +216,13 @@ class StocksCog(commands.Cog):
         Show a list of all available stocks and their prices.
         """
         stocks = await self.get_all_stocks()
-        embed = discord.Embed(title="Stocks", color=discord.Color.blurple())
+        embed = discord.Embed(
+            title="Current Market Prices (Low/High)", color=discord.Color.blurple()
+        )
         for stock in stocks:
             name = f"{stock.name}(**{stock.symbol}**)" if long_names else stock.symbol
-            embed.add_field(name=name, value=f"${stock.price:,.2f}", inline=True)
+            val = f"${stock.price:,.2f} (${stock.low:,.2f}/${stock.high:,.2f})"
+            embed.add_field(name=name, value=val, inline=True)
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command()

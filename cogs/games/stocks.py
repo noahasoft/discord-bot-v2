@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import datetime
 import math
 import random
 from typing import Optional
@@ -55,17 +56,29 @@ class GBMSystem:
 
 
 class Stock:
-    def __init__(self, name: str, params: GBMSystem, symbol: Optional[str] = None):
+    def __init__(
+        self,
+        name: str,
+        symbol: str,
+        params: GBMSystem,
+        date: Optional[str] = None,
+        high: Optional[float] = None,
+        low: Optional[float] = None,
+    ):
         self.name = name
-        self.symbol = symbol or name[:4].upper()
         self.params = params
+        self.symbol = symbol
+        self.high = high or params.S0
+        self.low = low or params.S0
+        self.date = date or datetime.datetime.now().strftime("%Y-%m-%d")
 
     def __str__(self) -> str:
         return f"{self.name}: {self.params.current_price}"
 
     @classmethod
     def from_row(cls, row) -> "Stock":
-        return cls(row[0], GBMSystem(S0=row[2]), row[1])
+        # s.name, s.symbol, s.price, h.date, h.high, h.low
+        return cls(row[0], row[1], GBMSystem(S0=row[2]), row[3], row[4], row[5])
 
     def get_next(self) -> float:
         return self.params.get_next()
