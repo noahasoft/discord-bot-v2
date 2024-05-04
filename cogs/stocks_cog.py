@@ -1,8 +1,10 @@
-from typing import Optional, Union
+from sqlite3 import Row
+from typing import Iterable, Optional, Union
 import aiosqlite
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
+import io
 
 from cogs.games.stocks import (
     GBMSystem,
@@ -147,6 +149,13 @@ class StocksCog(commands.Cog):
                 if stock:
                     stocks.append(stock)
                 return stocks
+
+    async def get_all_history(self) -> Iterable[Row]:
+        async with aiosqlite.connect("stocks.db") as db:
+            async with db.execute(
+                "SELECT stock_symbol, date, high, low FROM history"
+            ) as cursor:
+                return await cursor.fetchall()
 
     async def update_stock_price(self, symbol: str, new_price: float) -> None:
         async with aiosqlite.connect("stocks.db") as db:
@@ -300,3 +309,18 @@ class StocksCog(commands.Cog):
                 inline=True,
             )
         await interaction.response.send_message(embed=embed)
+
+    @app_commands.command()
+    async def download_market_data(self, interaction: discord.Interaction) -> None:
+        """
+        Download the market data as a CSV file.
+        """
+        stocks = await self.get_all_history()
+        data = "Symbol,Date,High,Low\n"
+        data += "\n".join(f"{','.join(str(val) for val in stock)}" for stock in stocks)
+        with io.BytesIO(data.encode()) as fp:
+            await interaction.response.send_message(
+                "Market Data",
+                ephemeral=True,
+                file=discord.File(fp, filename="market_data.csv"),
+            )
