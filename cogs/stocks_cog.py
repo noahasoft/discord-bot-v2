@@ -43,6 +43,7 @@ class StocksCog(commands.Cog):
                 Stock("Coinbase Global Inc.", "COIN", GBMSystem(S0=1900, mu=0.0019, sigma=0.19)),
                 Stock("Pinterest Inc.", "PINS", GBMSystem(S0=2000, mu=0.002, sigma=0.2)),
                 Stock("Palantir Technologies Inc.", "PLTR", GBMSystem(S0=2100, mu=0.0021, sigma=0.21)),
+                Stock("GameStop Corp.", "GME", GBMSystem(S0=2200, mu=0.0022, sigma=0.22)),
             ]
         )
         # fmt: on
