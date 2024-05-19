@@ -134,7 +134,7 @@ class CasinoCog(commands.Cog):
     async def slots_error(self, interaction: discord.Interaction, error: Exception):
         if isinstance(error, app_commands.errors.CommandOnCooldown):
             await interaction.response.send_message(
-                f"Slot is on cooldown. Try again in {error.retry_after:.2f} seconds.",
+                f"Slots is on cooldown. Try again in {error.retry_after:.2f} seconds.",
                 ephemeral=True,
             )
         else:
@@ -314,3 +314,13 @@ class CasinoCog(commands.Cog):
             else:
                 response += f"Better luck next time! You lost ${amount:,.2f}."
                 await interaction.response.send_message(response, ephemeral=True)
+
+    @roulette.error
+    async def roulette_error(self, interaction: discord.Interaction, error: Exception):
+        if isinstance(error, app_commands.errors.CommandOnCooldown):
+            await interaction.response.send_message(
+                f"Roulette is on cooldown. Try again in {error.retry_after:.2f} seconds.",
+                ephemeral=True,
+            )
+        else:
+            raise error

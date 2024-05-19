@@ -78,8 +78,12 @@ class RouletteGame:
                 else:
                     payouts[bet] = -bet.amount
             elif bet.bet_type == BetType.COLOR:
+                if bet.value == Color.GREEN:
+                    pay_factor = 35
+                else:
+                    pay_factor = 2
                 if bet.value == result.color:
-                    payouts[bet] = bet.amount * 2
+                    payouts[bet] = bet.amount * pay_factor
                 else:
                     payouts[bet] = -bet.amount
             elif bet.bet_type == BetType.ODD_EVEN:
@@ -90,7 +94,7 @@ class RouletteGame:
                 ):
                     payouts[bet] = bet.amount * 2
                 else:
-                    payouts[bet] = 0
+                    payouts[bet] = -bet.amount
             else:
                 payouts[bet] = 0
         return payouts
