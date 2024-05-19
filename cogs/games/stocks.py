@@ -5,15 +5,6 @@ import random
 from typing import Optional
 
 
-def clamp(v, min, max):
-    if v < min:
-        return min
-    elif v > max:
-        return max
-    else:
-        return v
-
-
 @dataclass
 class GBMSystem:
     """

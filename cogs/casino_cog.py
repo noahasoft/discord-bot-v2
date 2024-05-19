@@ -5,6 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 from copy import deepcopy
 
+from cogs.games.roulette import Bet, BetType, RouletteGame, EMOJI_COLORS
 from cogs.games.slots import (
     PayRule,
     GameBase,
@@ -52,6 +53,8 @@ class CasinoCog(commands.Cog):
             window,
         )
         self.slot_cost = 20
+        self.roulette_game = RouletteGame()
+        self.roulette_min_bet = 10
 
     async def cog_load(self) -> None:
         await self.add_slot_items()
@@ -267,3 +270,47 @@ class CasinoCog(commands.Cog):
                     i,
                 )
             await db.commit()
+
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 5, key=lambda i: (i.guild_id, i.user.id))
+    async def roulette(
+        self,
+        interaction: discord.Interaction,
+        bet_type: BetType,
+        value: str,
+        amount: float,
+    ):
+        """Play roulette. Bet on a number, color, or odd/even."""
+        if amount < self.roulette_min_bet:
+            await interaction.response.send_message(
+                f"Minimum bet is ${self.roulette_min_bet:,.2f}.", ephemeral=True
+            )
+            return
+
+        balance = await self.economy_cog.get_balance(interaction.user.id)
+        if amount > balance:
+            await interaction.response.send_message(
+                "Insufficient balance.", ephemeral=True
+            )
+            return
+
+        bet = Bet(bet_type, value, amount)
+        self.roulette_game.place_bet(bet)
+        await self.economy_cog.withdraw_money(
+            interaction.user.id, amount, "roulette bet"
+        )
+        response = f"Bet placed: {amount:,.2f} on {bet_type.name} {value}.\n"
+        result = self.roulette_game.wheel.spin()
+        response += f"**Result**: {result.number} {EMOJI_COLORS[result.color]}.\n"
+        payouts = self.roulette_game.evaluate_bets(result)
+        if bet in payouts:
+            payout = payouts[bet]
+            if payout > 0:
+                await self.economy_cog.deposit_money(
+                    interaction.user.id, payout, "roulette winnings"
+                )
+                response += f"Congratulations! You won ${payout:,.2f}!"
+                await interaction.response.send_message(response, ephemeral=True)
+            else:
+                response += f"Better luck next time! You lost ${amount:,.2f}."
+                await interaction.response.send_message(response, ephemeral=True)
